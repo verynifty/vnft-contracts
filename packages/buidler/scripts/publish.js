@@ -45,10 +45,7 @@ async function main() {
   }
   const finalContractList = [];
 
-  // get contract list for v5 and 6
   let contractList = fs.readdirSync(config.paths.sources);
-  let solidity5Contracts = fs.readdirSync('./contracts/5');
-  contractList = contractList.concat(solidity5Contracts);
 
   contractList.forEach((file) => {
     if (file.indexOf(".sol") >= 0) {

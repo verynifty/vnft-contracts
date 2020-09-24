@@ -73,10 +73,10 @@ module.exports = {
       enabled: true,
       runs: 200,
     },
-  },
-  paths: {
-    sources: "./contracts/6",
   }
+  // paths: {
+  //   sources: "./contracts/6",
+  // }
 };
 
 const DEBUG = false;

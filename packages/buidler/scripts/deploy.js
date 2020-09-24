@@ -54,11 +54,6 @@ function readArgumentsFile(contractName) {
 
 async function autoDeploy() {
   let contractList = fs.readdirSync(config.paths.sources);
-
-  // deploy also solidity v5 contracts
-  let solidity5Contracts = fs.readdirSync('./contracts/5');
-  contractList = contractList.concat(solidity5Contracts);
-
   return contractList
     .filter((fileName) => isSolidity(fileName))
     .reduce((lastDeployment, fileName) => {
