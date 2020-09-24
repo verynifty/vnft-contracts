@@ -3,8 +3,8 @@ pragma solidity ^0.6.0;
 // @TODO Add ERC165
 // @TODO think of tokenomics and the points based system.
 // @TODO think of ways to dynamically change food prices based on supply of tokens
-// @TODO Create base staking contract, the rewards for staking should be minimmal compared to actual game playing so people just don't mine the token without playing
 //@TODO Create minting contract, the only way to get new pets after initial airdrop should be by staking $pets, note that staked pets can also die
+// @TODO Add events to the contract
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
