@@ -119,6 +119,14 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
+        name="MasterChef"
+        signer={userProvider.getSigner()}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+      />
+
+      <Contract
         name="BaseToken"
         signer={userProvider.getSigner()}
         provider={localProvider}

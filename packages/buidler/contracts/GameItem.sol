@@ -1,7 +1,6 @@
 pragma solidity ^0.6.0;
 
 // @TODO Add ERC165
-// @TODO check how to implement correct BASE URI from Meme LTD for the API
 // @TODO think of tokenomics and the points based system.
 // @TODO think of ways to dynamically change food prices based on supply of tokens
 // @TODO Create base staking contract, the rewards for staking should be minimmal compared to actual game playing so people just don't mine the token without playing
@@ -71,9 +70,7 @@ interface IBaseToken {
 contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // using SafeMath for uint256;
 
-    IBaseToken public token = IBaseToken(
-        0x18b9306737eaf6E8FC8e737F488a1AE077b18053
-    );
+    IBaseToken public token;
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
@@ -82,15 +79,15 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // how much tokens to burn every time the pet is fed, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
     uint256 public maxFreePets = 100;
+
     // mining tokens
-    mapping(address => uint256) public blockStartedMining;
     mapping(address => uint256) public timesMinedIn24Hours;
     mapping(address => uint256) public timeStartedMining;
 
     // pet
-    mapping(uint256 => uint256) public blockLastFed;
+    mapping(uint256 => uint256) public timeUntilStarving;
     mapping(uint256 => uint256) public petScore;
-    mapping(uint256 => uint256) public blockPetBorn;
+    mapping(uint256 => uint256) public timePetBorn;
 
     // food
     mapping(uint256 => uint256) public foodPrice;
@@ -100,12 +97,14 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // returns the food id that is available to the user.
     // mapping(address => uint256) public foodAvailable;
 
-    // constructor() public ERC721("GameItem", "ITM") {}
-    constructor()
+    constructor(address _baseToken)
         public
-        ERC721PresetMinterPauserAutoId("GameItem", "ITM", "google.com")
-    {}
+        ERC721PresetMinterPauserAutoId("GameItem", "ITM", "api.ourapi.com")
+    {
+        token = IBaseToken(_baseToken);
+    }
 
+    // maybe useful in futurer functiosn, not used for now
     // modifier checkPetAlive(uint256 petId) {
     //     require(isPetAlive(petId));
     //     _;
@@ -124,7 +123,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function changeMaxFreePets(uint256 freePetsAmount) external {
         require(
             hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: Must be operator to allow to claim more free pets"
+            "ERC721PresetMinterPauserAutoId: Must be operator to allow to allow more free pets"
         );
         maxFreePets = freePetsAmount;
     }
@@ -136,14 +135,15 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     function isPetAlive(uint256 _petId) public view returns (bool) {
-        uint256 _blockLastFed = blockLastFed[_petId];
+        uint256 _timeUntilStarving = timeUntilStarving[_petId];
 
-        // check that was fed less then 24 hours ago otherwise dead af
-        if (_blockLastFed != 0 && block.number.sub(_blockLastFed) < 10) {
+        // check that pet didn't starve
+        if (_timeUntilStarving != 0 && _timeUntilStarving >= block.timestamp) {
             return true;
         }
     }
 
+    //this is just for text on local blockcahin
     function getCurrentBlock() public view returns (uint256) {
         return block.number;
     }
@@ -160,34 +160,31 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
 
         if (_timeStartedMining.add(1 days) < block.timestamp) {
             timeStartedMining[msg.sender] = block.timestamp;
-            blockStartedMining[msg.sender] = block.number;
             timesMinedIn24Hours[msg.sender] = 1;
         } else if (
             _timeStartedMining != 0 &&
             _timeStartedMining.add(1 days) > block.timestamp &&
             _timesMinedIn24Hours < 5
         ) {
-            blockStartedMining[msg.sender] = block.number;
+            timeStartedMining[msg.sender] = block.timestamp;
             timesMinedIn24Hours[msg.sender]++;
         } else if (_timesMinedIn24Hours == 5) {
             revert("You can mine up to 5 times per ~24 hours");
         }
     }
 
-    // check that user waited at least {blocksNeededBeforeClaimingTokens} blocks and not more then {blocksNeededBeforeClaimingTokens + 4} blocks to claim tokens to make it as if he mined with "proof of time"
+    // check that user waited at least {timeNeededBeforeClaimingTokens} and not more then {timeNeededBeforeClaimingTokens + 2 minutes} to claim tokens to make it as if he mined with "proof of time"
     function claimMiningRewards(uint256 petId) external {
-        uint256 _blockStartedMining = blockStartedMining[msg.sender];
+        uint256 _timeStartedMining = timeStartedMining[msg.sender];
         uint256 _timesMinedIn24Hours = timesMinedIn24Hours[msg.sender];
-        uint256 blocksNeededBeforeClaimingTokens = _timesMinedIn24Hours * 20;
-        require(_blockStartedMining != 0, "You need to start mining first");
-        require(_blockStartedMining < block.number);
-
+        uint256 timeNeededBeforeClaimingTokens = _timeStartedMining
+            .add(10 minutes)
+            .mul(_timesMinedIn24Hours);
+        require(_timeStartedMining != 0, "You need to start mining first");
+        require(_timeStartedMining < block.timestamp);
         require(
-            block.number.sub(_blockStartedMining) >
-                blocksNeededBeforeClaimingTokens &&
-                block.number.sub(_blockStartedMining) <
-                (blocksNeededBeforeClaimingTokens.add(4)),
-            "Current block number must be higher then start mining block"
+            block.timestamp =< timeNeededBeforeClaimingTokens.add(2 minutes),
+            "Current timestamp is over the limit to claim the tokens"
         );
 
         // must be owner of token to claim reward, this is a check to make sure the pet is alive
@@ -200,7 +197,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             _burn(petId);
         } else {
             //reset last start mined so can't remine and cheat
-            blockStartedMining[msg.sender] = 0;
+            timeStartedMining[msg.sender] = 0;
 
             // @TODO do calculation based on previous points earned in the game and send amount of tokens deserved "farmed"
 
@@ -227,13 +224,14 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         } else {
             // burn 90% of tokens paid
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
+            //@TODO calculate based on food value how much more time it gives the pet.
+            timeUntilStarving[petId] = timeUntilStarving[petId].add(1);
+            //@TODO calculate new points based on algorithm
+            petScore[petId] += foodPoints[foodId];
             // erc20 _transfer pet tokens to admin, burn 90% and 10% send to gov contract
             token.transferFrom(msg.sender, address(this), amount);
             // burn 90% of token, 10% stay for dev and community fund
             token.burn(amount.sub(amountToBurn));
-            blockLastFed[petId] = block.number;
-            // calculate new points based on algorithm
-            petScore[petId] += foodPoints[foodId];
         }
     }
 
@@ -249,10 +247,11 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function mintPet(address player) external {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreePets);
+
+        //pet minted has 24 hours until it starves at first
+        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(1 days);
+        timePetBorn[_tokenIds.current()] = block.timestamp;
         mint(player);
-        // on creation add block it was "fed" in this case made alive to be able to calculate if 24 hours pass without further feeding to burn this pet
-        blockLastFed[_tokenIds.current()] = block.number;
-        blockPetBorn[_tokenIds.current()] = block.number;
     }
 
     // create foods only admin and set private in BaseToken

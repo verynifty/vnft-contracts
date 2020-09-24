@@ -7,12 +7,13 @@ const { config, ethers } = require("@nomiclabs/buidler");
 async function main() {
   console.log("📡 Deploy \n");
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
-  await autoDeploy();
+  // await autoDeploy();
   // OR
   // custom deploy (to use deployed addresses dynamically for example:)
-  // const exampleToken = await deploy("BaseToken", ["adamToken", "ada", 18, 1000, 100, true, false])
-  // const examplePriceOracle = await deploy("ExamplePriceOracle")
-  // const smartContractWallet = await deploy("SmartContractWallet",[exampleToken.address,examplePriceOracle.address])
+  const BaseToken = await deploy("BaseToken", ["adamToken", "ada", 18, 1000, 100, true, false])
+  const GameItem = await deploy("GameItem", [BaseToken.address])
+  const MasterChef = await deploy("MasterChef", [BaseToken.address, 1, 1, 1])
+
 }
 
 
