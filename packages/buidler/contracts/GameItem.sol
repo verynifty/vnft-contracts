@@ -183,7 +183,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         require(_timeStartedMining != 0, "You need to start mining first");
         require(_timeStartedMining < block.timestamp);
         require(
-            block.timestamp =< timeNeededBeforeClaimingTokens.add(2 minutes),
+            block.timestamp <= timeNeededBeforeClaimingTokens.add(2 minutes),
             "Current timestamp is over the limit to claim the tokens"
         );
 
