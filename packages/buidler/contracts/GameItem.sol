@@ -74,7 +74,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    Counters.Counter private _foodIds;
+    Counters.Counter private _itemIds;
 
     // how much tokens to burn every time the pet is fed, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
@@ -89,10 +89,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     mapping(uint256 => uint256) public petScore;
     mapping(uint256 => uint256) public timePetBorn;
 
-    // food
-    mapping(uint256 => uint256) public foodPrice;
-    mapping(uint256 => uint256) public foodPoints;
-    mapping(uint256 => string) public foodName;
+    // items/benefits for the pet could be anything in the future such as food, glasses, hats, etc.
+    mapping(uint256 => uint256) public itemPrice;
+    mapping(uint256 => uint256) public itemPoints;
+    mapping(uint256 => string) public itemName;
 
     // returns the food id that is available to the user.
     // mapping(address => uint256) public foodAvailable;
@@ -128,8 +128,8 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         maxFreePets = freePetsAmount;
     }
 
-    function foodExists(uint256 foodId) public view returns (bool) {
-        if (bytes(foodName[foodId]).length > 0) {
+    function itemExists(uint256 itemId) public view returns (bool) {
+        if (bytes(itemName[itemId]).length > 0) {
             return true;
         }
     }
@@ -209,11 +209,11 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // feed the pet
     function feedPet(
         uint256 petId,
-        uint256 foodId,
+        uint256 itemId,
         uint256 amount
     ) external {
-        require(foodExists(foodId), "This food doesn't exist");
-        require(amount >= foodPrice[foodId], "This food costs more tokens");
+        require(itemExists(itemId), "This item doesn't exist");
+        require(amount >= itemPrice[itemId], "This item costs more tokens");
         require(
             ownerOf(petId) == msg.sender,
             "You must own the pet to feed it"
@@ -227,7 +227,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             //@TODO calculate based on food value how much more time it gives the pet.
             timeUntilStarving[petId] = timeUntilStarving[petId].add(1);
             //@TODO calculate new points based on algorithm
-            petScore[petId] += foodPoints[foodId];
+            petScore[petId] += itemPoints[itemId];
             // erc20 _transfer pet tokens to admin, burn 90% and 10% send to gov contract
             token.transferFrom(msg.sender, address(this), amount);
             // burn 90% of token, 10% stay for dev and community fund
@@ -255,20 +255,20 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     // create foods only admin and set private in BaseToken
-    function createFood(
+    function createItem(
         string calldata name,
         uint256 price,
         uint256 points
     ) external returns (bool) {
         require(
             hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: must have operator role to create food"
+            "ERC721PresetMinterPauserAutoId: must have operator role to create items"
         );
-        _foodIds.increment();
-        uint256 newFoodId = _foodIds.current();
-        foodName[newFoodId] = name;
-        foodPrice[newFoodId] = price * 10**18;
-        foodPoints[newFoodId] = points;
+        _itemIds.increment();
+        uint256 newItemId = _itemIds.current();
+        itemName[newItemId] = name;
+        itemPrice[newItemId] = price * 10**18;
+        itemPoints[newItemId] = points;
     }
 
     // // buy food
