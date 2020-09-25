@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/presets/ERC721PresetMinterPauserAutoId.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 // SPDX-License-Identifier: MIT
 
@@ -68,15 +69,24 @@ interface IBaseToken {
 
 // ERC721,
 contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
-    // using SafeMath for uint256;
-
     IBaseToken public token;
+
+    // External NFTs
+    struct NFTInfo {
+        IERC721 token; // Address of LP token contract.
+        uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our pets. example this is 10 to give 10% less rewards for this nft
+        bool active;
+    }
+
+    NFTInfo[] public supportedNfts;
+    // could be a mapping too, not sure if mapping would return all values on the struct?
+    //  mapping(adress => NFTInfo) public nftInfo;
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     Counters.Counter private _itemIds;
 
-    // how much tokens to burn every time the pet is fed, the remaining goes to the community and devs
+    // how many tokens to burn every time the pet is fed, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
     uint256 public maxFreePets = 100;
 
@@ -88,6 +98,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     mapping(uint256 => uint256) public timeUntilStarving;
     mapping(uint256 => uint256) public petScore;
     mapping(uint256 => uint256) public timePetBorn;
+    mapping(uint256 => bool) public isOutsider;
 
     // items/benefits for the pet could be anything in the future such as food, glasses, hats, etc.
     mapping(uint256 => uint256) public itemPrice;
@@ -110,21 +121,29 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     //     _;
     // }
 
-    // change how much to burn on each buy and how much goes to community.
-    function changeBurnPercentage(uint256 percentage) external {
+    modifier onlyOperator() {
         require(
             hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: Must be operator to set new BaseURI"
+            "Roles: caller does not have the OPERATOR role"
         );
+        _;
+    }
+
+    modifier isSupportedNFT(uint256 nftId, uint256 _id) {
+        require(
+            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            "You are not the owner of this NFT"
+        );
+        _;
+    }
+
+    // change how much to burn on each buy and how much goes to community.
+    function changeBurnPercentage(uint256 percentage) external onlyOperator {
         require(percentage <= 100);
         burnPercentage = burnPercentage;
     }
 
-    function changeMaxFreePets(uint256 freePetsAmount) external {
-        require(
-            hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: Must be operator to allow to allow more free pets"
-        );
+    function changeMaxFreePets(uint256 freePetsAmount) external onlyOperator {
         maxFreePets = freePetsAmount;
     }
 
@@ -143,12 +162,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         }
     }
 
-    //this is just for text on local blockcahin
+    //this is just for test on local blockcahin
     function getCurrentBlock() public view returns (uint256) {
         return block.number;
     }
-
-    // end erc20 example
 
     // User can start mining up to 5 times per 24 hours
     function startMining() public {
@@ -235,11 +252,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         }
     }
 
-    function setBaseURI(string memory baseURI_) public {
-        require(
-            hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: Must be operator to set new BaseURI"
-        );
+    function setBaseURI(string memory baseURI_) public onlyOperator {
         _setBaseURI(baseURI_);
     }
 
@@ -248,8 +261,8 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreePets);
 
-        //pet minted has 24 hours until it starves at first
-        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(1 days);
+        //pet minted has 7 days until it starves at first
+        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(7 days);
         timePetBorn[_tokenIds.current()] = block.timestamp;
         mint(player);
     }
@@ -259,11 +272,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         string calldata name,
         uint256 price,
         uint256 points
-    ) external returns (bool) {
-        require(
-            hasRole(OPERATOR_ROLE, _msgSender()),
-            "ERC721PresetMinterPauserAutoId: must have operator role to create items"
-        );
+    ) external onlyOperator returns (bool) {
         _itemIds.increment();
         uint256 newItemId = _itemIds.current();
         itemName[newItemId] = name;
@@ -271,17 +280,56 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         itemPoints[newItemId] = points;
     }
 
-    // // buy food
-    // function buyFood(uint256 foodId, uint256 amount) external returns (bool) {
-    //     require(foodExists(foodId), "This food doesn't exist");
-    //     require(amount >= foodPrice[foodId], "This food costs more tokens");
-    //     require(
-    //         foodAvailbale[msg.sender] == 0,
-    //         "You can't buy extra food while you have one available"
-    //     );
-    //     // transfer erc20 $pet
+    //  *****************************
+    //  LOGIC FOR EXTERNAL NFTS
+    //  ****************************
+    // support an external nft to mine rewards and play
+    function addNft(IERC721 _nftToken, uint256 _reward) public onlyOperator {
+        supportedNfts.push(
+            NFTInfo({token: _nftToken, reward: _reward, active: true})
+        );
+    }
 
-    //     foodAvailable[msg.sender] = foodId;
-    //     // only buy one food at a time for simplicity, you can always buy more after you use the food.
-    // }
+    function supportedNftLength() external view returns (uint256) {
+        return supportedNfts.length;
+    }
+
+    function updateSupportedNFT(
+        uint256 _id,
+        uint256 _reward,
+        bool _active
+    ) public onlyOperator {
+        supportedNfts[_id].reward = _reward;
+        supportedNfts[_id].active = _active;
+    }
+
+    // lets give life to your erc721 token and make it fun to mint $pets!
+    function giveLife(uint256 nftId, uint256 _id)
+        external
+        isSupportedNFT(nftId, _id)
+    {
+        // check that msg.sender is owner of the nft he is giving life to
+        require(
+            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            "You are not the owner of this NFT"
+        );
+
+        // we somehow need to add the supported nft to the "db" and keep track of points ,timeUntilStarved,  need help here
+    }
+
+    // send your current NFT to valhalla and get a $pet NFT
+    function valhalla(uint256 nftId, uint256 _id)
+        external
+        isSupportedNFT(nftId, _id)
+    {
+        // check that msg.sender is owner the NFT id
+        require(
+            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            "You are not the owner of this NFT"
+        );
+        // send your NFT to valhalla
+        supportedNfts[nftId].token.transferFrom(msg.sender, address(0), _id);
+        // get our NFT
+        mint(msg.sender);
+    }
 }

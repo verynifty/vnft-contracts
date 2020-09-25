@@ -133,9 +133,13 @@ function App() {
         address={address}
         blockExplorer={blockExplorer}
       />
-
-
-
+      <Contract
+        name="StakeForPets"
+        signer={userProvider.getSigner()}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+      />
 
       {/*
         ⚙️ Here is an example UI that displays and sets the purpose in your smart contract:

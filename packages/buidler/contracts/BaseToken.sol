@@ -2113,16 +2113,16 @@ contract BaseToken is ERC20Capped, ERC20Burnable, ERC1363, Roles, TokenRecover {
         uint256 initialSupply,
         bool transferEnabled,
         bool mintingFinished
-    ) public ERC20Capped(cap) ERC1363(name, symbol) {
+    ) public ERC20Capped(cap * 10**18) ERC1363(name, symbol) {
         require(
-            mintingFinished == false || cap == initialSupply,
+            mintingFinished == false || cap == initialSupply * 10**18,
             "BaseToken: if finish minting, cap must be equal to initialSupply"
         );
 
         _setupDecimals(decimals);
 
         if (initialSupply > 0) {
-            _mint(owner(), initialSupply);
+            _mint(owner(), initialSupply * 10**18);
         }
 
         if (mintingFinished) {

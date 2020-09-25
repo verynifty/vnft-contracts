@@ -9,10 +9,11 @@ async function main() {
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
   // await autoDeploy();
   // OR
-  // custom deploy (to use deployed addresses dynamically for example:)
+  // custom deploy (to use deployed addresses)
   const BaseToken = await deploy("BaseToken", ["adamToken", "ada", 18, 1000, 100, true, false])
   const GameItem = await deploy("GameItem", [BaseToken.address])
   const MasterChef = await deploy("MasterChef", [BaseToken.address, 1, 1, 1])
+  const StakeForPets = await deploy("StakeForPets", [GameItem.address, BaseToken.address])
 
 }
 
