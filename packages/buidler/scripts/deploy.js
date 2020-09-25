@@ -14,6 +14,7 @@ async function main() {
   const GameItem = await deploy("GameItem", [BaseToken.address])
   const MasterChef = await deploy("MasterChef", [BaseToken.address, 1, 1, 1])
   const StakeForPets = await deploy("StakeForPets", [GameItem.address, BaseToken.address])
+  const PetAirdrop = await deploy("PetAirdrop", [GameItem.address, ethers.utils.formatBytes32String("testMerkle")])
 
 }
 

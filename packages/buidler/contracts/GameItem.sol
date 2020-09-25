@@ -71,6 +71,9 @@ interface IBaseToken {
 contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     IBaseToken public token;
 
+
+    bytes32 public constant OPERATOR_ROLE = keccak256("A");
+    
     // External NFTs
     struct NFTInfo {
         IERC721 token; // Address of LP token contract.
