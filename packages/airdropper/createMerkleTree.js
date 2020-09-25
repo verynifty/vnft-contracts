@@ -6,8 +6,10 @@ const NUMBER_OF_DROPS = 100;
 let initial_leaves = []
 
 for (let index = 0; index < NUMBER_OF_DROPS; index++) {
-    let drop_index = index.toString(16);
-    console.log(drop_index)
+    let dropIndex = index.toString(16);
+    let hashKey = "YOLO"
+    let proof = keccak256(dropIndex + hashKey)
+    console.log(proof)
     initial_leaves.push(drop_index)
 }
 
