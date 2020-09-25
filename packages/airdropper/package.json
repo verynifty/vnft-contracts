@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ethereumjs-util": "^7.0.5",
     "keccak256": "^1.0.0",
     "merkletreejs": "^0.2.9"
   }
