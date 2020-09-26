@@ -174,6 +174,20 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         return petScore[_petId];
     }
 
+    // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
+    function editItem(
+        uint256 _id,
+        uint256 _price,
+        uint256 _points,
+        string calldata _name,
+        uint256 _timeExtension
+    ) external onlyOperator {
+        itemPrice[_id] = _price;
+        itemPoints[_id] = _points;
+        itemName[_id] = _name;
+        itemTimeExtension[_id] = _timeExtension;
+    }
+
     //this is just for test on local blockcahin
     function getCurrentBlock() public view returns (uint256) {
         return block.number;
@@ -258,10 +272,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
             uint256 devFee = amount.sub(amountToBurn);
             // calculate how many days the pet is alive, we could add this to the algorithm to calculate points;
-            uint256 daysAlive = block.timestamp.sub(timePetBorn[petId]).div(
-                86400
-            );
-            // based on item recalculate timeUntilStarving.
+            // uint256 daysAlive = block.timestamp.sub(timePetBorn[petId]).div(
+            //     86400
+            // );
+            // // based on item recalculate timeUntilStarving.
             // not sure if this needs to be added or this needs to be replaces for new timeUntilStarving.
             timeUntilStarving[petId] = timeUntilStarving[petId].add(
                 itemTimeExtension[itemId]
@@ -273,9 +287,11 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             if (devAllocation <= maxDevAllocation) {
                 devAllocation = devAllocation.add(devFee);
                 token.transferFrom(msg.sender, address(this), devFee);
+                // burn 90% of token, 10% stay for dev and community fund
+                token.burn(amount.sub(amountToBurn));
+            } else {
+                token.burn(amount);
             }
-            // burn 90% of token, 10% stay for dev and community fund
-            token.burn(amount.sub(amountToBurn));
             emit PetConsumed(petId, itemId);
         }
     }
