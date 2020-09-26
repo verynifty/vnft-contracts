@@ -77,6 +77,8 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         bool active;
     }
 
+    bytes32 public OPERATOR_ROLE = keccak256("A");
+
     NFTInfo[] public supportedNfts;
 
     using Counters for Counters.Counter;
@@ -321,6 +323,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         );
 
         // we somehow need to add the supported nft to the "db" and keep track of points ,timeUntilStarved,  need help here
+        // Jules we can store all mappings (including ours with our address) as maps like timeuntilstarved[NFTaddress][NFTID] instead of timeuntilstarved[nftid]
         emit LifeGiven(nftId, _id);
     }
 

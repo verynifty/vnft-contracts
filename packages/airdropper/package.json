@@ -9,8 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "csv-database": "^0.9.2",
+    "csv-db": "^0.2.2",
     "ethereumjs-util": "^7.0.5",
     "keccak256": "^1.0.0",
-    "merkletreejs": "^0.2.9"
+    "merkletreejs": "^0.2.9",
+    "telegraf": "^3.38.0"
   }
 }

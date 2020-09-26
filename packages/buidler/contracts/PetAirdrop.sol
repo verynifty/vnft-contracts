@@ -5,34 +5,40 @@ import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./GameItem.sol";
 
-contract PetAirdrop {
+contract PetAirdrop  {
 
-    event Claimed(bytes32, address);
+    event Claimed(uint256 index, address owner);
 
     GameItem public immutable  petMinter;
     bytes32 public immutable  merkleRoot;
 
     // This is a packed array of booleans.
-    mapping(bytes32 => uint256) private claimedBitMap;
+    mapping(uint256 => uint256) private claimedBitMap;
 
     constructor(GameItem pet_minter_, bytes32 merkleRoot_) public {
         petMinter = pet_minter_;
         merkleRoot = merkleRoot_;
     }
 
-    function isClaimed(bytes32 index) public view  returns (bool) {
-        return claimedBitMap[index] == 1;
+    function isClaimed(uint256 index) public view  returns (bool) {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        uint256 claimedWord = claimedBitMap[claimedWordIndex];
+        uint256 mask = (1 << claimedBitIndex);
+        return claimedWord & mask == mask;
     }
 
-    function _setClaimed(bytes32 index) private {
-        claimedBitMap[index] = 1;
+    function _setClaimed(uint256 index) private {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
     }
 
-    function claim(bytes32 index, bytes32[] calldata merkleProof) external  {
+    function claim(uint256 index, bytes32[] calldata merkleProof) external  {
         require(!isClaimed(index), 'MerkleDistributor: Drop already claimed.');
         console.logBytes(abi.encodePacked(index));
         // Verify the merkle proof.
-        bytes32 node = keccak256(abi.encodePacked(index));
+        bytes32 node = keccak256(abi.encodePacked(bytes32(index)));
         console.logBytes32(node);
         require(MerkleProof.verify(merkleProof, merkleRoot, node), 'MerkleDistributor: Invalid proof.');
 
