@@ -3,8 +3,7 @@ pragma solidity ^0.6.0;
 // @TODO Add ERC165
 // @TODO think of tokenomics and the points based system.
 // @TODO think of ways to dynamically change food prices based on supply of tokens
-//@TODO Create minting contract, the only way to get new pets after initial airdrop should be by staking $pets, note that staked pets can also die
-// @TODO Add events to the contract
+// @TODO Write tests
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -71,9 +70,6 @@ interface IBaseToken {
 contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     IBaseToken public token;
 
-
-    bytes32 public constant OPERATOR_ROLE = keccak256("A");
-    
     // External NFTs
     struct NFTInfo {
         IERC721 token; // Address of LP token contract.
@@ -82,8 +78,6 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     NFTInfo[] public supportedNfts;
-    // could be a mapping too, not sure if mapping would return all values on the struct?
-    //  mapping(adress => NFTInfo) public nftInfo;
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
@@ -108,8 +102,15 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     mapping(uint256 => uint256) public itemPoints;
     mapping(uint256 => string) public itemName;
 
-    // returns the food id that is available to the user.
-    // mapping(address => uint256) public foodAvailable;
+    event BurnPercentageChanged(uint256 percentage);
+    event StartedMining(address who, uint256 timestamp);
+    event ClaimedMiningRewards(address who, uint256 amount);
+    event PetBurned(uint256 id);
+    event PetConsumed(uint256 petId, uint256 itemId);
+    event PetMinted(address to);
+    event ItemCreated(string name, uint256 price, uint256 points);
+    event LifeGiven(uint256 forSupportedNFT, uint256 id);
+    event PetSentToValhalla(uint256 forSupportedNFT, uint256 id);
 
     constructor(address _baseToken)
         public
@@ -117,12 +118,6 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     {
         token = IBaseToken(_baseToken);
     }
-
-    // maybe useful in futurer functiosn, not used for now
-    // modifier checkPetAlive(uint256 petId) {
-    //     require(isPetAlive(petId));
-    //     _;
-    // }
 
     modifier onlyOperator() {
         require(
@@ -144,6 +139,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function changeBurnPercentage(uint256 percentage) external onlyOperator {
         require(percentage <= 100);
         burnPercentage = burnPercentage;
+        emit BurnPercentageChanged(burnPercentage);
     }
 
     function changeMaxFreePets(uint256 freePetsAmount) external onlyOperator {
@@ -156,10 +152,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         }
     }
 
+    // check that pet didn't starve
     function isPetAlive(uint256 _petId) public view returns (bool) {
         uint256 _timeUntilStarving = timeUntilStarving[_petId];
 
-        // check that pet didn't starve
         if (_timeUntilStarving != 0 && _timeUntilStarving >= block.timestamp) {
             return true;
         }
@@ -181,6 +177,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         if (_timeStartedMining.add(1 days) < block.timestamp) {
             timeStartedMining[msg.sender] = block.timestamp;
             timesMinedIn24Hours[msg.sender] = 1;
+            emit StartedMining(msg.sender, timeStartedMining[msg.sender]);
         } else if (
             _timeStartedMining != 0 &&
             _timeStartedMining.add(1 days) > block.timestamp &&
@@ -188,6 +185,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         ) {
             timeStartedMining[msg.sender] = block.timestamp;
             timesMinedIn24Hours[msg.sender]++;
+            emit StartedMining(msg.sender, timeStartedMining[msg.sender]);
         } else if (_timesMinedIn24Hours == 5) {
             revert("You can mine up to 5 times per ~24 hours");
         }
@@ -223,6 +221,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
 
             // @TODO send calculated erc20 tokens to user
             token.mint(msg.sender, 1);
+            emit ClaimedMiningRewards(msg.sender, 1);
         }
     }
 
@@ -241,6 +240,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         if (!isPetAlive(petId)) {
             // burn pet cause it's dead
             _burn(petId);
+            emit PetBurned(petId);
         } else {
             // burn 90% of tokens paid
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
@@ -252,6 +252,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             token.transferFrom(msg.sender, address(this), amount);
             // burn 90% of token, 10% stay for dev and community fund
             token.burn(amount.sub(amountToBurn));
+            emit PetConsumed(petId, itemId);
         }
     }
 
@@ -259,7 +260,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         _setBaseURI(baseURI_);
     }
 
-    // maybe only OPERATOR can mintPet at first and then anywone can mint a pet by helping us burn dead pets.
+    // maybe only OPERATOR can mintPet at first and then anyone can mint a pet by helping us burn dead pets.
     function mintPet(address player) external {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreePets);
@@ -268,9 +269,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(7 days);
         timePetBorn[_tokenIds.current()] = block.timestamp;
         mint(player);
+        emit PetMinted(msg.sender);
     }
 
-    // create foods only admin and set private in BaseToken
+    // add pet items
     function createItem(
         string calldata name,
         uint256 price,
@@ -281,6 +283,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         itemName[newItemId] = name;
         itemPrice[newItemId] = price * 10**18;
         itemPoints[newItemId] = points;
+        emit ItemCreated(name, price, points);
     }
 
     //  *****************************
@@ -318,6 +321,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         );
 
         // we somehow need to add the supported nft to the "db" and keep track of points ,timeUntilStarved,  need help here
+        emit LifeGiven(nftId, _id);
     }
 
     // send your current NFT to valhalla and get a $pet NFT
@@ -334,5 +338,6 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         supportedNfts[nftId].token.transferFrom(msg.sender, address(0), _id);
         // get our NFT
         mint(msg.sender);
+        emit PetSentToValhalla(nftId, _id);
     }
 }

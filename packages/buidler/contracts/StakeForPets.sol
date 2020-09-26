@@ -110,6 +110,13 @@ contract StakeForPets is Roles {
     mapping(address => uint256) public lastUpdateTime;
     mapping(address => uint256) public points;
 
+    event Staked(address who, uint256 amount);
+    event Withdrawal(address who, uint256 amount);
+    event PetMinted(address to);
+
+    event StakeReqChanged(uint256 newAmount);
+    event PriceOfPetChanged(uint256 newAmount);
+
     constructor(address _pets, address _petToken) public {
         pets = IERC721(_pets);
         petToken = IERC20(_petToken);
@@ -118,10 +125,12 @@ contract StakeForPets is Roles {
     // changes stake requirement
     function changeStakeReq(uint256 _newAmount) external onlyOperator {
         minStake = _newAmount;
+        emit StakeReqChanged(_newAmount);
     }
 
     function changePriceOfPet(uint256 _newAmount) external onlyOperator {
         petPrice = _newAmount;
+        emit PriceOfPetChanged(_newAmount);
     }
 
     modifier updateReward(address account) {
@@ -150,6 +159,7 @@ contract StakeForPets is Roles {
         totalStaked = totalStaked.add(_amount);
         balance[msg.sender] = balance[msg.sender].add(_amount);
         petToken.transferFrom(msg.sender, address(this), _amount);
+        emit Staked(msg.sender, _amount);
     }
 
     // withdraw part of your stake
@@ -160,6 +170,7 @@ contract StakeForPets is Roles {
         totalStaked = totalStaked.sub(amount);
         // transfer erc20 back from the contract to the user
         petToken.transfer(msg.sender, amount);
+        emit Withdrawal(msg.sender, amount);
     }
 
     // withdraw all your amount staked
@@ -175,5 +186,6 @@ contract StakeForPets is Roles {
         );
         points[msg.sender] = points[msg.sender].sub(petPrice);
         pets.mint(msg.sender);
+        emit PetMinted(msg.sender);
     }
 }
