@@ -2,7 +2,7 @@ const { keccak256, keccakFromString, keccakFromHexString, bufferToHex, BN } = re
 const { MerkleTree } = require('./libMerkle.js')
 const csvdb = require('csv-database');
 
-const NUMBER_OF_DROPS = 10;
+const NUMBER_OF_DROPS = 4000;
 const FILE_TO_SAVE = "keys.csv";
 
 (async function () {

@@ -1,12 +1,30 @@
 const { Telegraf } = require('telegraf')
+const csvdb = require('csv-database');
 
 const bot = new Telegraf("1356132262:AAFM9fpH5foZ16OrC3xIcgILwNRh6XOnWuE")
 const BASE_CLAIM_URL = "https://google.com/lol?"
+const FILE_TO_SAVE = "claims.csv";
+const FILE_TO_READ = "keys.csv";
 
-bot.start(function(ctx) {
+
+
+
+
+bot.start(async function (ctx) {
+    const proofdb = await csvdb(FILE_TO_READ, ['index', 'leaf', 'proof']);
+    const claimeddb = await csvdb(FILE_TO_SAVE, ["telegram_id", "telegram_name", 'index', 'leaf', 'proof']);
+    let keys = await proofdb.get()
+    console.log(keys)
     console.log(ctx)
     console.log(ctx.chat)
     if (ctx.chat.type == "private") {
+        let existing_claim = await claimeddb.get({ telegram_id: ctx.chat.id });
+        if (existing_claim.length == 0) {
+
+        } else {
+
+        }
+        console.log(existing_claim)
         let claim_index = 3
         let claim_proof = "0x365625643"
         ctx.reply(`Hey ` + ctx.chat.first_name + ` 👋👋`)
