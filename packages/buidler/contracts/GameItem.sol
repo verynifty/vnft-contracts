@@ -70,14 +70,16 @@ interface IBaseToken {
 contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     IBaseToken public token;
 
+    // for example this should be 10% of total coins
+    uint256 public maxDevAllocation = 10000;
+    uint256 public devAllocation = 0;
+
     // External NFTs
     struct NFTInfo {
         IERC721 token; // Address of LP token contract.
         uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our pets. example this is 10 to give 10% less rewards for this nft
         bool active;
     }
-
-    bytes32 public OPERATOR_ROLE = keccak256("A");
 
     NFTInfo[] public supportedNfts;
 
@@ -103,6 +105,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     mapping(uint256 => uint256) public itemPrice;
     mapping(uint256 => uint256) public itemPoints;
     mapping(uint256 => string) public itemName;
+    mapping(uint256 => uint256) public itemTimeExtension;
 
     event BurnPercentageChanged(uint256 percentage);
     event StartedMining(address who, uint256 timestamp);
@@ -148,6 +151,10 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         maxFreePets = freePetsAmount;
     }
 
+    function changeMaxDevAllocation(uint256 amount) external onlyOperator {
+        maxDevAllocation = amount;
+    }
+
     function itemExists(uint256 itemId) public view returns (bool) {
         if (bytes(itemName[itemId]).length > 0) {
             return true;
@@ -161,6 +168,24 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         if (_timeUntilStarving != 0 && _timeUntilStarving >= block.timestamp) {
             return true;
         }
+    }
+
+    function getPetScore(uint256 _petId) public view returns (uint256) {
+        return petScore[_petId];
+    }
+
+    // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
+    function editItem(
+        uint256 _id,
+        uint256 _price,
+        uint256 _points,
+        string calldata _name,
+        uint256 _timeExtension
+    ) external onlyOperator {
+        itemPrice[_id] = _price;
+        itemPoints[_id] = _points;
+        itemName[_id] = _name;
+        itemTimeExtension[_id] = _timeExtension;
     }
 
     //this is just for test on local blockcahin
@@ -244,16 +269,29 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             _burn(petId);
             emit PetBurned(petId);
         } else {
-            // burn 90% of tokens paid
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
-            //@TODO calculate based on food value how much more time it gives the pet.
-            timeUntilStarving[petId] = timeUntilStarving[petId].add(1);
-            //@TODO calculate new points based on algorithm
-            petScore[petId] += itemPoints[itemId];
-            // erc20 _transfer pet tokens to admin, burn 90% and 10% send to gov contract
-            token.transferFrom(msg.sender, address(this), amount);
-            // burn 90% of token, 10% stay for dev and community fund
-            token.burn(amount.sub(amountToBurn));
+            uint256 devFee = amount.sub(amountToBurn);
+            // calculate how many days the pet is alive, we could add this to the algorithm to calculate points;
+            // uint256 daysAlive = block.timestamp.sub(timePetBorn[petId]).div(
+            //     86400
+            // );
+            // // based on item recalculate timeUntilStarving.
+            // not sure if this needs to be added or this needs to be replaces for new timeUntilStarving.
+            timeUntilStarving[petId] = timeUntilStarving[petId].add(
+                itemTimeExtension[itemId]
+            );
+            //@TODO calculate new points based on an algorithm
+            petScore[petId] = petScore[petId].add(itemPoints[itemId]);
+
+            // burn 90% so they go back to community mining and staking, and send 10% to devs
+            if (devAllocation <= maxDevAllocation) {
+                devAllocation = devAllocation.add(devFee);
+                token.transferFrom(msg.sender, address(this), devFee);
+                // burn 90% of token, 10% stay for dev and community fund
+                token.burn(amount.sub(amountToBurn));
+            } else {
+                token.burn(amount);
+            }
             emit PetConsumed(petId, itemId);
         }
     }
@@ -278,13 +316,15 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function createItem(
         string calldata name,
         uint256 price,
-        uint256 points
+        uint256 points,
+        uint256 timeExtension
     ) external onlyOperator returns (bool) {
         _itemIds.increment();
         uint256 newItemId = _itemIds.current();
         itemName[newItemId] = name;
         itemPrice[newItemId] = price * 10**18;
         itemPoints[newItemId] = points;
+        itemTimeExtension[newItemId] = timeExtension;
         emit ItemCreated(name, price, points);
     }
 
