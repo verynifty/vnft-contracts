@@ -70,6 +70,14 @@ interface IMuseToken {
 contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     IMuseToken public token;
 
+    struct VNFTObj {
+        IERC721 token;
+        uint256 id;
+    }
+
+    // Mapping from token ID to NFT struct details
+    mapping(uint256 => VNFTObj) public vnftDetails;
+
     // for example this should be 10% of total coins
     uint256 public maxDevAllocation = 10000;
     uint256 public devAllocation = 0;
@@ -132,9 +140,9 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         _;
     }
 
-    modifier isSupportedNFT(uint256 nftId, uint256 _id) {
+    modifier isSupportedNFT(uint256 index, uint256 _id) {
         require(
-            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            supportedNfts[index].token.ownerOf(_id) == msg.sender,
             "You are not the owner of this NFT"
         );
         _;
@@ -239,7 +247,7 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         );
         if (!isVnftAlive(nftId)) {
             // burn VNFT cause it's dead
-            _burn(nftId);
+            burn(nftId);
         } else {
             //reset last start mined so can't remine and cheat
             timeStartedMining[msg.sender] = 0;
@@ -266,7 +274,7 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         );
         if (!isVnftAlive(nftId)) {
             // burn VNFT cause it's dead
-            _burn(nftId);
+            burn(nftId);
             emit VnftBurned(nftId);
         } else {
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
@@ -301,15 +309,26 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     // maybe only OPERATOR can mintVnft at first and then anyone can mint a VNFT by helping us burn dead pets.
-    function mintVnft(address player) external {
+    function mint(address player) public override {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreeVnfts);
 
         //pet minted has 7 days until it starves at first
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(7 days);
         timeVnftBorn[_tokenIds.current()] = block.timestamp;
-        mint(player);
+
+        vnftDetails[_tokenIds.current()] = VNFTObj(
+            IERC721(address(this)),
+            _tokenIds.current()
+        );
+
+        super.mint(player);
         emit VnftMinted(msg.sender);
+    }
+
+    function burn(uint256 tokenId) public override {
+        delete vnftDetails[tokenId];
+        super.burn(tokenId);
     }
 
     // add items/accessories
@@ -343,44 +362,53 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     function updateSupportedNFT(
-        uint256 _id,
+        uint256 index,
         uint256 _reward,
         bool _active
     ) public onlyOperator {
-        supportedNfts[_id].reward = _reward;
-        supportedNfts[_id].active = _active;
+        supportedNfts[index].reward = _reward;
+        supportedNfts[index].active = _active;
     }
 
     // lets give life to your erc721 token and make it fun to mint $muse!
-    function giveLife(uint256 nftId, uint256 _id)
+    function giveLife(uint256 index, uint256 _id)
         external
-        isSupportedNFT(nftId, _id)
+        isSupportedNFT(index, _id)
     {
         // check that msg.sender is owner of the nft he is giving life to
         require(
-            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            supportedNfts[index].token.ownerOf(_id) == msg.sender,
             "You are not the owner of this NFT"
         );
 
-        // we somehow need to add the supported nft to the "db" and keep track of points ,timeUntilStarved,  need help here
-        // Jules we can store all mappings (including ours with our address) as maps like timeuntilstarved[NFTaddress][NFTID] instead of timeuntilstarved[nftid]
-        emit LifeGiven(nftId, _id);
+        // transfer the nft to the contract
+        supportedNfts[index].token.transferFrom(msg.sender, address(this), _id);
+
+        // mint a vNFT
+        vnftDetails[_tokenIds.current()] = VNFTObj(
+            supportedNfts[index].token,
+            _id
+        );
+
+        mint(msg.sender);
+
+        emit LifeGiven(index, _id);
     }
 
     // send your current NFT to valhalla and get a $muse NFT
-    function valhalla(uint256 nftId, uint256 _id)
+    function valhalla(uint256 index, uint256 _id)
         external
-        isSupportedNFT(nftId, _id)
+        isSupportedNFT(index, _id)
     {
         // check that msg.sender is owner the NFT id
         require(
-            supportedNfts[nftId].token.ownerOf(_id) == msg.sender,
+            supportedNfts[index].token.ownerOf(_id) == msg.sender,
             "You are not the owner of this NFT"
         );
         // send your NFT to valhalla
-        supportedNfts[nftId].token.transferFrom(msg.sender, address(0), _id);
+        supportedNfts[index].token.transferFrom(msg.sender, address(0), _id);
         // get our NFT
         mint(msg.sender);
-        emit VnftSentToValhalla(nftId, _id);
+        emit VnftSentToValhalla(index, _id);
     }
 }
