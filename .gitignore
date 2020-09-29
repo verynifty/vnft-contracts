@@ -2,9 +2,23 @@ packages/buidler/*.txt
 **/aws.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-!**/node_modules/@openzepelin/contracts/token/ERC721.ol
 
-**/node_modules
+# **/node_modules
+!**/node_modules/
+**/node_modules/*
+!**/node_modules/@openzepelin/
+**/node_modules/@openzepelin/*
+!**/node_modules/@openzepelin/contracts/
+**/node_modules/@openzepelin/contracts/*
+!**/node_modules/@openzepelin/contracts/token/
+**/node_modules/@openzepelin/contracts/token/*
+!**/node_modules/@openzepelin/contracts/token/ERC721/
+**/node_modules/@openzepelin/contracts/token/ERC721/*
+!**/node_modules/@openzepelin/contracts/token/ERC721/ERC721.sol
+
+
+
+
 packages/buidler/artifacts
 packages/react-app/src/contracts
 packages/buidler/cache
