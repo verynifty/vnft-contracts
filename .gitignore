@@ -2,7 +2,7 @@ packages/buidler/*.txt
 **/aws.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-!**/node_modules/@openzepelin/contracts/token/erc721.ol
+!**/node_modules/@openzepelin/contracts/token/ERC721.ol
 
 **/node_modules
 packages/buidler/artifacts
