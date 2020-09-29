@@ -4,13 +4,13 @@ const { solidity } = require("ethereum-waffle");
 
 use(solidity);
 
-describe("BaseToken", function () {
+describe("MuseToken", function () {
     let myContract;
 
-    it("Should deploy BaseToken and dependencies", async function () {
+    it("Should deploy MuseToken and dependencies", async function () {
 
-        const _BaseToken = await ethers.getContractFactory("BaseToken");
-        BaseToken = await _BaseToken.deploy("adamToken", "ada", 18, 1000, 100, true, false);
+        const _MuseToken = await ethers.getContractFactory("MuseToken");
+        MuseToken = await _MuseToken.deploy(1000);
 
     });
 });

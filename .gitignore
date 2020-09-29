@@ -28,3 +28,5 @@ yarn-debug.log*
 yarn-error.log*
 
 .idea
+
+!node_modules/@openzepelin/contracts/token/erc721.ol

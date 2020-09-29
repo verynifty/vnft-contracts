@@ -32,7 +32,7 @@ contract TokenRecover is Ownable {
 }
 
 // Interface for our erc20 token
-interface IBaseToken {
+interface IMuseToken {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address tokenOwner)
@@ -67,8 +67,8 @@ interface IBaseToken {
 }
 
 // ERC721,
-contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
-    IBaseToken public token;
+contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
+    IMuseToken public token;
 
     // for example this should be 10% of total coins
     uint256 public maxDevAllocation = 10000;
@@ -77,7 +77,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // External NFTs
     struct NFTInfo {
         IERC721 token; // Address of LP token contract.
-        uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our pets. example this is 10 to give 10% less rewards for this nft
+        uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our VNFTs. example this is 10 to give 10% less rewards for this nft
         bool active;
     }
 
@@ -87,21 +87,21 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     Counters.Counter private _tokenIds;
     Counters.Counter private _itemIds;
 
-    // how many tokens to burn every time the pet is fed, the remaining goes to the community and devs
+    // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
-    uint256 public maxFreePets = 100;
+    uint256 public maxFreeVnfts = 100;
 
     // mining tokens
     mapping(address => uint256) public timesMinedIn24Hours;
     mapping(address => uint256) public timeStartedMining;
 
-    // pet
+    // VNFT properties
     mapping(uint256 => uint256) public timeUntilStarving;
-    mapping(uint256 => uint256) public petScore;
-    mapping(uint256 => uint256) public timePetBorn;
+    mapping(uint256 => uint256) public vnftScore;
+    mapping(uint256 => uint256) public timeVnftBorn;
     mapping(uint256 => bool) public isOutsider;
 
-    // items/benefits for the pet could be anything in the future such as food, glasses, hats, etc.
+    // items/benefits for the VNFT could be anything in the future such as food, glasses, hats, etc.
     mapping(uint256 => uint256) public itemPrice;
     mapping(uint256 => uint256) public itemPoints;
     mapping(uint256 => string) public itemName;
@@ -110,18 +110,18 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     event BurnPercentageChanged(uint256 percentage);
     event StartedMining(address who, uint256 timestamp);
     event ClaimedMiningRewards(address who, uint256 amount);
-    event PetBurned(uint256 id);
-    event PetConsumed(uint256 petId, uint256 itemId);
-    event PetMinted(address to);
+    event VnftBurned(uint256 id);
+    event VnftConsumed(uint256 nftId, uint256 itemId);
+    event VnftMinted(address to);
     event ItemCreated(string name, uint256 price, uint256 points);
     event LifeGiven(uint256 forSupportedNFT, uint256 id);
-    event PetSentToValhalla(uint256 forSupportedNFT, uint256 id);
+    event VnftSentToValhalla(uint256 forSupportedNFT, uint256 id);
 
     constructor(address _baseToken)
         public
-        ERC721PresetMinterPauserAutoId("GameItem", "ITM", "api.ourapi.com")
+        ERC721PresetMinterPauserAutoId("VNFT", "VNFT", "api.ourapi.com")
     {
-        token = IBaseToken(_baseToken);
+        token = IMuseToken(_baseToken);
     }
 
     modifier onlyOperator() {
@@ -147,8 +147,8 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         emit BurnPercentageChanged(burnPercentage);
     }
 
-    function changeMaxFreePets(uint256 freePetsAmount) external onlyOperator {
-        maxFreePets = freePetsAmount;
+    function changeMaxFreeVnfts(uint256 freeVnftAmount) external onlyOperator {
+        maxFreeVnfts = freeVnftAmount;
     }
 
     function changeMaxDevAllocation(uint256 amount) external onlyOperator {
@@ -161,17 +161,17 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         }
     }
 
-    // check that pet didn't starve
-    function isPetAlive(uint256 _petId) public view returns (bool) {
-        uint256 _timeUntilStarving = timeUntilStarving[_petId];
+    // check that VNFT didn't starve
+    function isVnftAlive(uint256 _nftId) public view returns (bool) {
+        uint256 _timeUntilStarving = timeUntilStarving[_nftId];
 
         if (_timeUntilStarving != 0 && _timeUntilStarving >= block.timestamp) {
             return true;
         }
     }
 
-    function getPetScore(uint256 _petId) public view returns (uint256) {
-        return petScore[_petId];
+    function getVnftScore(uint256 _nftId) public view returns (uint256) {
+        return vnftScore[_nftId];
     }
 
     // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
@@ -219,7 +219,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     // check that user waited at least {timeNeededBeforeClaimingTokens} and not more then {timeNeededBeforeClaimingTokens + 2 minutes} to claim tokens to make it as if he mined with "proof of time"
-    function claimMiningRewards(uint256 petId) external {
+    function claimMiningRewards(uint256 nftId) external {
         uint256 _timeStartedMining = timeStartedMining[msg.sender];
         uint256 _timesMinedIn24Hours = timesMinedIn24Hours[msg.sender];
         uint256 timeNeededBeforeClaimingTokens = _timeStartedMining
@@ -232,14 +232,14 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             "Current timestamp is over the limit to claim the tokens"
         );
 
-        // must be owner of token to claim reward, this is a check to make sure the pet is alive
+        // must be owner of token to claim reward, this is a check to make sure the VNFT is alive
         require(
-            ownerOf(petId) == msg.sender,
-            "You must own a pet to claim rewards"
+            ownerOf(nftId) == msg.sender,
+            "You must own a VNFT to claim rewards"
         );
-        if (!isPetAlive(petId)) {
-            // burn pet cause it's dead
-            _burn(petId);
+        if (!isVnftAlive(nftId)) {
+            // burn VNFT cause it's dead
+            _burn(nftId);
         } else {
             //reset last start mined so can't remine and cheat
             timeStartedMining[msg.sender] = 0;
@@ -252,22 +252,22 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         }
     }
 
-    // feed the pet
-    function feedPet(
-        uint256 petId,
+    // Provide accesory to the VNFT
+    function buyAccesory(
+        uint256 nftId,
         uint256 itemId,
         uint256 amount
     ) external {
         require(itemExists(itemId), "This item doesn't exist");
         require(amount >= itemPrice[itemId], "This item costs more tokens");
         require(
-            ownerOf(petId) == msg.sender,
-            "You must own the pet to feed it"
+            ownerOf(nftId) == msg.sender,
+            "You must own the VNFT to give it an accessory"
         );
-        if (!isPetAlive(petId)) {
-            // burn pet cause it's dead
-            _burn(petId);
-            emit PetBurned(petId);
+        if (!isVnftAlive(nftId)) {
+            // burn VNFT cause it's dead
+            _burn(nftId);
+            emit VnftBurned(nftId);
         } else {
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
             uint256 devFee = amount.sub(amountToBurn);
@@ -277,11 +277,11 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             // );
             // // based on item recalculate timeUntilStarving.
             // not sure if this needs to be added or this needs to be replaces for new timeUntilStarving.
-            timeUntilStarving[petId] = timeUntilStarving[petId].add(
+            timeUntilStarving[nftId] = timeUntilStarving[nftId].add(
                 itemTimeExtension[itemId]
             );
             //@TODO calculate new points based on an algorithm
-            petScore[petId] = petScore[petId].add(itemPoints[itemId]);
+            vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
 
             // burn 90% so they go back to community mining and staking, and send 10% to devs
             if (devAllocation <= maxDevAllocation) {
@@ -292,7 +292,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             } else {
                 token.burn(amount);
             }
-            emit PetConsumed(petId, itemId);
+            emit VnftConsumed(nftId, itemId);
         }
     }
 
@@ -300,19 +300,19 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         _setBaseURI(baseURI_);
     }
 
-    // maybe only OPERATOR can mintPet at first and then anyone can mint a pet by helping us burn dead pets.
-    function mintPet(address player) external {
+    // maybe only OPERATOR can mintVnft at first and then anyone can mint a VNFT by helping us burn dead pets.
+    function mintVnft(address player) external {
         // only 100 pets can be minted for free
-        require(totalSupply() <= maxFreePets);
+        require(totalSupply() <= maxFreeVnfts);
 
         //pet minted has 7 days until it starves at first
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(7 days);
-        timePetBorn[_tokenIds.current()] = block.timestamp;
+        timeVnftBorn[_tokenIds.current()] = block.timestamp;
         mint(player);
-        emit PetMinted(msg.sender);
+        emit VnftMinted(msg.sender);
     }
 
-    // add pet items
+    // add items/accessories
     function createItem(
         string calldata name,
         uint256 price,
@@ -351,7 +351,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         supportedNfts[_id].active = _active;
     }
 
-    // lets give life to your erc721 token and make it fun to mint $pets!
+    // lets give life to your erc721 token and make it fun to mint $muse!
     function giveLife(uint256 nftId, uint256 _id)
         external
         isSupportedNFT(nftId, _id)
@@ -367,7 +367,7 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         emit LifeGiven(nftId, _id);
     }
 
-    // send your current NFT to valhalla and get a $pet NFT
+    // send your current NFT to valhalla and get a $muse NFT
     function valhalla(uint256 nftId, uint256 _id)
         external
         isSupportedNFT(nftId, _id)
@@ -381,6 +381,6 @@ contract GameItem is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         supportedNfts[nftId].token.transferFrom(msg.sender, address(0), _id);
         // get our NFT
         mint(msg.sender);
-        emit PetSentToValhalla(nftId, _id);
+        emit VnftSentToValhalla(nftId, _id);
     }
 }

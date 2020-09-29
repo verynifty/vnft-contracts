@@ -112,7 +112,7 @@ function App() {
 
 
       <Contract
-        name="GameItem"
+        name="VNFT"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
@@ -127,7 +127,7 @@ function App() {
       />
 
       <Contract
-        name="BaseToken"
+        name="MuseToken"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
@@ -140,7 +140,7 @@ function App() {
         address={address}
         blockExplorer={blockExplorer}
       />
-            <Contract
+      <Contract
         name="PetAirdrop"
         signer={userProvider.getSigner()}
         provider={localProvider}

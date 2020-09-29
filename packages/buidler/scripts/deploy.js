@@ -10,11 +10,11 @@ async function main() {
   // await autoDeploy();
   // OR
   // custom deploy (to use deployed addresses)
-  const BaseToken = await deploy("BaseToken", ["adamToken", "ada", 18, 1000, 100, true, false])
-  const GameItem = await deploy("GameItem", [BaseToken.address])
-  const MasterChef = await deploy("MasterChef", [BaseToken.address, 1, 1, 1])
-  const StakeForPets = await deploy("StakeForPets", [GameItem.address, BaseToken.address])
-  const PetAirdrop = await deploy("PetAirdrop", [GameItem.address, "0x2a3eb5e4fd7ca38eebd660d4b9879fd3e235cd240772bccdfadfa6c1529b4711"])
+  const MuseToken = await deploy("MuseToken", [1000])
+  const VNFT = await deploy("VNFT", [MuseToken.address])
+  const MasterChef = await deploy("MasterChef", [MuseToken.address, 1, 1, 1])
+  const StakeForPets = await deploy("StakeForPets", [VNFT.address, MuseToken.address])
+  const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x2a3eb5e4fd7ca38eebd660d4b9879fd3e235cd240772bccdfadfa6c1529b4711"])
 
 }
 

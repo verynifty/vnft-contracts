@@ -274,7 +274,7 @@ interface IMigratorChef {
 }
 
 // Interface for our erc20 token
-interface IBaseToken {
+interface IMuseToken {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address tokenOwner)
@@ -344,8 +344,8 @@ contract MasterChef is Ownable, Roles {
         uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
     }
 
-    // The Pet TOKEN!
-    IBaseToken public petToken;
+    // The Muse TOKEN!
+    IMuseToken public museToken;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
@@ -375,13 +375,13 @@ contract MasterChef is Ownable, Roles {
     );
 
     constructor(
-        IBaseToken _petToken,
+        IMuseToken _museToken,
         // address _devaddr,
         uint256 _sushiPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
-        petToken = _petToken;
+        museToken = _museToken;
         devaddr = msg.sender;
         sushiPerBlock = _sushiPerBlock;
         bonusEndBlock = _bonusEndBlock;
@@ -516,8 +516,8 @@ contract MasterChef is Ownable, Roles {
             .mul(sushiPerBlock)
             .mul(pool.allocPoint)
             .div(totalAllocPoint);
-        petToken.mint(devaddr, sushiReward.div(10));
-        petToken.mint(address(this), sushiReward);
+        museToken.mint(devaddr, sushiReward.div(10));
+        museToken.mint(address(this), sushiReward);
         pool.accSushiPerShare = pool.accSushiPerShare.add(
             sushiReward.mul(1e12).div(lpSupply)
         );
@@ -575,11 +575,11 @@ contract MasterChef is Ownable, Roles {
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
     function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 sushiBal = petToken.balanceOf(address(this));
+        uint256 sushiBal = museToken.balanceOf(address(this));
         if (_amount > sushiBal) {
-            petToken.transfer(_to, sushiBal);
+            museToken.transfer(_to, sushiBal);
         } else {
-            petToken.transfer(_to, _amount);
+            museToken.transfer(_to, _amount);
         }
     }
 
