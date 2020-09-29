@@ -196,11 +196,6 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         itemTimeExtension[_id] = _timeExtension;
     }
 
-    //this is just for test on local blockcahin
-    function getCurrentBlock() public view returns (uint256) {
-        return block.number;
-    }
-
     // User can start mining up to 5 times per 24 hours
     function startMining() public {
         // must own at least a token to start mining
