@@ -6,6 +6,8 @@ pragma solidity ^0.6.0;
 // @TODO Write tests
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -67,11 +69,16 @@ interface IMuseToken {
 }
 
 // ERC721,
-contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
+contract VNFT is
+    Ownable,
+    ERC721PresetMinterPauserAutoId,
+    TokenRecover,
+    ERC1155Holder
+{
     IMuseToken public token;
 
     struct VNFTObj {
-        IERC721 token;
+        address token;
         uint256 id;
     }
 
@@ -84,9 +91,10 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
 
     // External NFTs
     struct NFTInfo {
-        IERC721 token; // Address of LP token contract.
+        address token; // Address of LP token contract.
         uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our VNFTs. example this is 10 to give 10% less rewards for this nft
         bool active;
+        uint256 standard; //the nft standard ERC721 || ERC1155
     }
 
     NFTInfo[] public supportedNfts;
@@ -144,14 +152,6 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         require(
             hasRole(OPERATOR_ROLE, _msgSender()),
             "Roles: caller does not have the OPERATOR role"
-        );
-        _;
-    }
-
-    modifier isSupportedNFT(uint256 index, uint256 _id) {
-        require(
-            supportedNfts[index].token.ownerOf(_id) == msg.sender,
-            "You are not the owner of this NFT"
         );
         _;
     }
@@ -321,7 +321,7 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         _setBaseURI(baseURI_);
     }
 
-    function mint(address player) public override onlyOperator {
+    function mint(address player) public override {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreeVnfts);
 
@@ -329,17 +329,21 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(3 days);
         timeVnftBorn[_tokenIds.current()] = block.timestamp;
 
+        vnftDetails[_tokenIds.current()] = VNFTObj(
+            address(this),
+            _tokenIds.current()
+        );
         super.mint(player);
         emit VnftMinted(msg.sender);
     }
 
     function mintForAidrop(address player) external onlyOperator {
         vnftDetails[_tokenIds.current()] = VNFTObj(
-            IERC721(address(this)),
+            address(this),
             _tokenIds.current()
         );
 
-        mint(player);
+        super.mint(player);
     }
 
     function burn(uint256 tokenId) public override notPaused {
@@ -380,9 +384,18 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     //  LOGIC FOR EXTERNAL NFTS
     //  ****************************
     // support an external nft to mine rewards and play
-    function addNft(IERC721 _nftToken, uint256 _reward) public onlyOperator {
+    function addNft(
+        address _nftToken,
+        uint256 _reward,
+        uint256 _type
+    ) public onlyOperator {
         supportedNfts.push(
-            NFTInfo({token: _nftToken, reward: _reward, active: true})
+            NFTInfo({
+                token: _nftToken,
+                reward: _reward,
+                active: true,
+                standard: _type
+            })
         );
     }
 
@@ -393,20 +406,36 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function updateSupportedNFT(
         uint256 index,
         uint256 _reward,
-        bool _active
+        bool _active,
+        address _address
     ) public onlyOperator {
         supportedNfts[index].reward = _reward;
         supportedNfts[index].active = _active;
+        supportedNfts[index].token = _address;
     }
 
     // lets give life to your erc721 token and make it fun to mint $muse!
-    function giveLife(uint256 index, uint256 _id)
-        external
-        isSupportedNFT(index, _id)
-        notPaused
-    {
+    function giveLife(
+        uint256 index,
+        uint256 _id,
+        uint256 nftType
+    ) external notPaused {
         // transfer the nft to the contract
-        supportedNfts[index].token.transferFrom(msg.sender, address(this), _id);
+        if (nftType == 721) {
+            IERC721(supportedNfts[index].token).transferFrom(
+                msg.sender,
+                address(this),
+                _id
+            );
+        } else if (nftType == 1155) {
+            IERC1155(supportedNfts[index].token).safeTransferFrom(
+                msg.sender,
+                address(this),
+                _id,
+                1, //the amount of tokens to transfer which always be 1
+                "0x0"
+            );
+        }
 
         // mint a vNFT
         vnftDetails[_tokenIds.current()] = VNFTObj(
