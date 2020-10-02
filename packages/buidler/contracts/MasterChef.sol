@@ -301,11 +301,7 @@ interface IMuseToken {
         uint256 tokens
     ) external returns (bool success);
 
-    function mintingFinished() external view returns (bool);
-
     function mint(address to, uint256 amount) external;
-
-    function burn(uint256 amount) external;
 }
 
 // MasterChef is the master of Sushi. He can make Sushi and he is a fair guy.
@@ -346,6 +342,8 @@ contract MasterChef is Ownable, Roles {
 
     // The Muse TOKEN!
     IMuseToken public museToken;
+    // adding this just in case of nobody using the game but degens hacking the farming
+    bool devFee = false;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
@@ -390,6 +388,10 @@ contract MasterChef is Ownable, Roles {
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
+    }
+
+    function allowDevFee(bool _allow) public onlyOperator {
+        devFee = _allow;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
@@ -516,7 +518,11 @@ contract MasterChef is Ownable, Roles {
             .mul(sushiPerBlock)
             .mul(pool.allocPoint)
             .div(totalAllocPoint);
-        museToken.mint(devaddr, sushiReward.div(10));
+
+        //no dev fee as of now
+        if (devFee) {
+            museToken.mint(devaddr, sushiReward.div(10));
+        }
         museToken.mint(address(this), sushiReward);
         pool.accSushiPerShare = pool.accSushiPerShare.add(
             sushiReward.mul(1e12).div(lpSupply)

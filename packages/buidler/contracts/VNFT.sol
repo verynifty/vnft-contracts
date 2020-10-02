@@ -98,10 +98,13 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
     uint256 public maxFreeVnfts = 100;
+    // max times a tokenId can mine
+    uint256 public maxMinesPerDay = 2;
+    bool public gameStopped = false;
 
     // mining tokens
-    mapping(address => uint256) public timesMinedIn24Hours;
-    mapping(address => uint256) public timeStartedMining;
+    mapping(uint256 => uint256) public timesMinedIn24Hours;
+    mapping(uint256 => uint256) public timeStartedMining;
 
     // VNFT properties
     mapping(uint256 => uint256) public timeUntilStarving;
@@ -116,8 +119,8 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     mapping(uint256 => uint256) public itemTimeExtension;
 
     event BurnPercentageChanged(uint256 percentage);
-    event StartedMining(address who, uint256 timestamp);
-    event ClaimedMiningRewards(address who, uint256 amount);
+    event StartedMining(uint256 who, uint256 timestamp);
+    event ClaimedMiningRewards(uint256 who, uint256 amount);
     event VnftBurned(uint256 id);
     event VnftConsumed(uint256 nftId, uint256 itemId);
     event VnftMinted(address to);
@@ -130,6 +133,11 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         ERC721PresetMinterPauserAutoId("VNFT", "VNFT", "api.ourapi.com")
     {
         token = IMuseToken(_baseToken);
+    }
+
+    modifier notPaused() {
+        require(!gameStopped, "Contract is paused");
+        _;
     }
 
     modifier onlyOperator() {
@@ -146,6 +154,11 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             "You are not the owner of this NFT"
         );
         _;
+    }
+
+    // in case a bug happens or we upgrade to another smart contract
+    function pauseGame(bool _pause) external {
+        gameStopped = _pause;
     }
 
     // change how much to burn on each buy and how much goes to community.
@@ -182,6 +195,12 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         return vnftScore[_nftId];
     }
 
+    // get the level the vNFT is on to calculate points
+    function level(uint256 tokenId) external view returns (uint256) {
+        uint256 _score = vnftScore[tokenId];
+        return _score.div(10);
+    }
+
     // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
     function editItem(
         uint256 _id,
@@ -197,34 +216,34 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     }
 
     // User can start mining up to 5 times per 24 hours
-    function startMining() public {
+    function startMining(uint256 tokenId) public notPaused {
         // must own at least a token to start mining
         require(balanceOf(msg.sender) > 0);
 
-        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[msg.sender];
-        uint256 _timeStartedMining = timeStartedMining[msg.sender];
+        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[tokenId];
+        uint256 _timeStartedMining = timeStartedMining[tokenId];
 
         if (_timeStartedMining.add(1 days) < block.timestamp) {
-            timeStartedMining[msg.sender] = block.timestamp;
-            timesMinedIn24Hours[msg.sender] = 1;
-            emit StartedMining(msg.sender, timeStartedMining[msg.sender]);
+            timeStartedMining[tokenId] = block.timestamp;
+            timesMinedIn24Hours[tokenId] = 1;
+            emit StartedMining(tokenId, timeStartedMining[tokenId]);
         } else if (
             _timeStartedMining != 0 &&
             _timeStartedMining.add(1 days) > block.timestamp &&
-            _timesMinedIn24Hours < 5
+            _timesMinedIn24Hours <= maxMinesPerDay
         ) {
-            timeStartedMining[msg.sender] = block.timestamp;
-            timesMinedIn24Hours[msg.sender]++;
-            emit StartedMining(msg.sender, timeStartedMining[msg.sender]);
-        } else if (_timesMinedIn24Hours == 5) {
-            revert("You can mine up to 5 times per ~24 hours");
+            timeStartedMining[tokenId] = block.timestamp;
+            timesMinedIn24Hours[tokenId]++;
+            emit StartedMining(tokenId, timeStartedMining[tokenId]);
+        } else if (_timesMinedIn24Hours == maxMinesPerDay) {
+            revert("You can mine up to 2 times per ~24 hours");
         }
     }
 
     // check that user waited at least {timeNeededBeforeClaimingTokens} and not more then {timeNeededBeforeClaimingTokens + 2 minutes} to claim tokens to make it as if he mined with "proof of time"
-    function claimMiningRewards(uint256 nftId) external {
-        uint256 _timeStartedMining = timeStartedMining[msg.sender];
-        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[msg.sender];
+    function claimMiningRewards(uint256 nftId) external notPaused {
+        uint256 _timeStartedMining = timeStartedMining[nftId];
+        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[nftId];
         uint256 timeNeededBeforeClaimingTokens = _timeStartedMining
             .add(10 minutes)
             .mul(_timesMinedIn24Hours);
@@ -245,27 +264,25 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
             burn(nftId);
         } else {
             //reset last start mined so can't remine and cheat
-            timeStartedMining[msg.sender] = 0;
-
-            // @TODO do calculation based on previous points earned in the game and send amount of tokens deserved "farmed"
+            timeStartedMining[nftId] = 0;
 
             // @TODO send calculated erc20 tokens to user
             token.mint(msg.sender, 1);
-            emit ClaimedMiningRewards(msg.sender, 1);
+            emit ClaimedMiningRewards(nftId, 1);
         }
     }
 
-    // Provide accesory to the VNFT
+    // Vuy accesory to the VNFT
     function buyAccesory(
         uint256 nftId,
         uint256 itemId,
         uint256 amount
-    ) external {
+    ) external notPaused {
         require(itemExists(itemId), "This item doesn't exist");
         require(amount >= itemPrice[itemId], "This item costs more tokens");
         require(
             ownerOf(nftId) == msg.sender,
-            "You must own the VNFT to give it an accessory"
+            "You must own the vNFT to give it an accessory"
         );
         if (!isVnftAlive(nftId)) {
             // burn VNFT cause it's dead
@@ -274,13 +291,14 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         } else {
             uint256 amountToBurn = amount.mul(burnPercentage).div(100);
             uint256 devFee = amount.sub(amountToBurn);
+            // @TODO Maybe
             // calculate how many days the pet is alive, we could add this to the algorithm to calculate points;
             // uint256 daysAlive = block.timestamp.sub(timePetBorn[petId]).div(
             //     86400
             // );
             // // based on item recalculate timeUntilStarving.
             // not sure if this needs to be added or this needs to be replaces for new timeUntilStarving.
-            timeUntilStarving[nftId] = timeUntilStarving[nftId].add(
+            timeUntilStarving[nftId] = block.timestamp.add(
                 itemTimeExtension[itemId]
             );
             //@TODO calculate new points based on an algorithm
@@ -291,7 +309,7 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
                 devAllocation = devAllocation.add(devFee);
                 token.transferFrom(msg.sender, address(this), devFee);
                 // burn 90% of token, 10% stay for dev and community fund
-                token.burn(amount.sub(amountToBurn));
+                token.burn(amountToBurn);
             } else {
                 token.burn(amount);
             }
@@ -303,27 +321,43 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         _setBaseURI(baseURI_);
     }
 
-    // maybe only OPERATOR can mintVnft at first and then anyone can mint a VNFT by helping us burn dead pets.
-    function mint(address player) public override {
+    function mint(address player) public override onlyOperator {
         // only 100 pets can be minted for free
         require(totalSupply() <= maxFreeVnfts);
 
-        //pet minted has 7 days until it starves at first
-        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(7 days);
+        //pet minted has 3 days until it starves at first
+        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(3 days);
         timeVnftBorn[_tokenIds.current()] = block.timestamp;
-
-        vnftDetails[_tokenIds.current()] = VNFTObj(
-            IERC721(address(this)),
-            _tokenIds.current()
-        );
 
         super.mint(player);
         emit VnftMinted(msg.sender);
     }
 
-    function burn(uint256 tokenId) public override {
+    function mintForAidrop(address player) external onlyOperator {
+        vnftDetails[_tokenIds.current()] = VNFTObj(
+            IERC721(address(this)),
+            _tokenIds.current()
+        );
+
+        mint(player);
+    }
+
+    function burn(uint256 tokenId) public override notPaused {
         delete vnftDetails[tokenId];
         super.burn(tokenId);
+    }
+
+    // kill starverd tokens to get some of their juice
+    //  @TODO fix this so it can burn if is not owner of death token.
+    function fatality(uint256 _deadId, uint256 _tokenId) external notPaused {
+        require(
+            !isVnftAlive(_deadId),
+            "The vNFT has to be starved to claim his life"
+        );
+        vnftScore[_tokenId] = vnftScore[_tokenId].add(
+            vnftScore[_deadId].sub(2)
+        );
+        burn(_deadId);
     }
 
     // add items/accessories
@@ -369,13 +403,8 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
     function giveLife(uint256 index, uint256 _id)
         external
         isSupportedNFT(index, _id)
+        notPaused
     {
-        // check that msg.sender is owner of the nft he is giving life to
-        require(
-            supportedNfts[index].token.ownerOf(_id) == msg.sender,
-            "You are not the owner of this NFT"
-        );
-
         // transfer the nft to the contract
         supportedNfts[index].token.transferFrom(msg.sender, address(this), _id);
 
@@ -388,22 +417,5 @@ contract VNFT is Ownable, ERC721PresetMinterPauserAutoId, TokenRecover {
         mint(msg.sender);
 
         emit LifeGiven(index, _id);
-    }
-
-    // send your current NFT to valhalla and get a $muse NFT
-    function valhalla(uint256 index, uint256 _id)
-        external
-        isSupportedNFT(index, _id)
-    {
-        // check that msg.sender is owner the NFT id
-        require(
-            supportedNfts[index].token.ownerOf(_id) == msg.sender,
-            "You are not the owner of this NFT"
-        );
-        // send your NFT to valhalla
-        supportedNfts[index].token.transferFrom(msg.sender, address(0), _id);
-        // get our NFT
-        mint(msg.sender);
-        emit VnftSentToValhalla(index, _id);
     }
 }

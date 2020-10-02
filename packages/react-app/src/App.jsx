@@ -134,7 +134,7 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
-        name="StakeForPets"
+        name="StakeForVnfts"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
