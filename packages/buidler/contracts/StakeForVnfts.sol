@@ -152,7 +152,10 @@ contract StakeForVnfts is Roles {
     }
 
     function stake(uint256 _amount) external updateReward(msg.sender) {
-        require(_amount >= minStake, "You need to stake at least 5 $muse");
+        require(
+            _amount >= minStake,
+            "You need to stake at least the min $muse"
+        );
 
         // transfer tokens to this address to stake them
         totalStaked = totalStaked.add(_amount);

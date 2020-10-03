@@ -120,12 +120,11 @@ contract VNFT is
     event BurnPercentageChanged(uint256 percentage);
     event StartedMining(uint256 who, uint256 timestamp);
     event ClaimedMiningRewards(uint256 who, uint256 amount);
-    event VnftBurned(uint256 id);
+    // event VnftBurned(uint256 id);
     event VnftConsumed(uint256 nftId, uint256 itemId);
     event VnftMinted(address to);
     event ItemCreated(string name, uint256 price, uint256 points);
     event LifeGiven(uint256 forSupportedNFT, uint256 id);
-    event VnftSentToValhalla(uint256 forSupportedNFT, uint256 id);
 
     constructor(address _baseToken)
         public
@@ -246,7 +245,6 @@ contract VNFT is
         if (!isVnftAlive(nftId)) {
             // burn VNFT cause it's dead
             burn(nftId);
-            emit VnftBurned(nftId);
         } else {
             uint256 devFee;
             uint256 amountToBurn;
@@ -284,7 +282,7 @@ contract VNFT is
     }
 
     function mint(address player) public override {
-        // only 100 pets can be minted for free
+        // decide this before
         require(totalSupply() <= maxFreeVnfts);
 
         //pet minted has 3 days until it starves at first
@@ -297,15 +295,6 @@ contract VNFT is
         );
         super.mint(player);
         emit VnftMinted(msg.sender);
-    }
-
-    function mintForAidrop(address player) external onlyOperator {
-        vnftDetails[_tokenIds.current()] = VNFTObj(
-            address(this),
-            _tokenIds.current()
-        );
-
-        super.mint(player);
     }
 
     function burn(uint256 tokenId) public override notPaused {
@@ -405,7 +394,7 @@ contract VNFT is
             _id
         );
 
-        mint(msg.sender);
+        super.mint(msg.sender);
 
         emit LifeGiven(index, _id);
     }
