@@ -276,7 +276,8 @@ contract VNFT is
     function buyAccesory(
         uint256 nftId,
         uint256 itemId,
-        uint256 amount
+        uint256 amount,
+        uint256 devPercent
     ) external notPaused {
         require(itemExists(itemId), "This item doesn't exist");
         require(amount >= itemPrice[itemId], "This item costs more tokens");
@@ -289,18 +290,21 @@ contract VNFT is
             burn(nftId);
             emit VnftBurned(nftId);
         } else {
-            uint256 amountToBurn = amount.mul(burnPercentage).div(100);
-            uint256 devFee = amount.sub(amountToBurn);
-            // @TODO Maybe
-            // calculate how many days the pet is alive, we could add this to the algorithm to calculate points;
-            // uint256 daysAlive = block.timestamp.sub(timePetBorn[petId]).div(
-            //     86400
-            // );
-            // // based on item recalculate timeUntilStarving.
-            // not sure if this needs to be added or this needs to be replaces for new timeUntilStarving.
+            uint256 devFee;
+            uint256 amountToBurn;
+            if (devPercent <= 10) {
+                amountToBurn = amount.mul(burnPercentage).div(100);
+                devFee = amount.sub(amountToBurn);
+            } else {
+                devFee = amount.mul(devPercent).div(100);
+                amountToBurn = amount.sub(devFee);
+            }
+
+            //recalculate timeUntilStarving.
             timeUntilStarving[nftId] = block.timestamp.add(
                 itemTimeExtension[itemId]
             );
+
             //@TODO calculate new points based on an algorithm
             vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
 
