@@ -1,10 +1,5 @@
 pragma solidity ^0.6.0;
 
-// @TODO Add ERC165
-// @TODO think of tokenomics and the points based system.
-// @TODO think of ways to dynamically change food prices based on supply of tokens
-// @TODO Write tests
-
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
@@ -106,21 +101,17 @@ contract VNFT is
     // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
     uint256 public maxFreeVnfts = 100;
-    // max times a tokenId can mine
-    uint256 public maxMinesPerDay = 2;
     bool public gameStopped = false;
 
     // mining tokens
-    mapping(uint256 => uint256) public timesMinedIn24Hours;
-    mapping(uint256 => uint256) public timeStartedMining;
+    mapping(uint256 => uint256) public lastTimeMined;
 
     // VNFT properties
     mapping(uint256 => uint256) public timeUntilStarving;
     mapping(uint256 => uint256) public vnftScore;
     mapping(uint256 => uint256) public timeVnftBorn;
-    mapping(uint256 => bool) public isOutsider;
 
-    // items/benefits for the VNFT could be anything in the future such as food, glasses, hats, etc.
+    // items/benefits for the VNFT could be anything in the future.
     mapping(uint256 => uint256) public itemPrice;
     mapping(uint256 => uint256) public itemPoints;
     mapping(uint256 => string) public itemName;
@@ -215,46 +206,13 @@ contract VNFT is
         itemTimeExtension[_id] = _timeExtension;
     }
 
-    // User can start mining up to 5 times per 24 hours
-    function startMining(uint256 tokenId) public notPaused {
-        // must own at least a token to start mining
-        require(balanceOf(msg.sender) > 0);
-
-        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[tokenId];
-        uint256 _timeStartedMining = timeStartedMining[tokenId];
-
-        if (_timeStartedMining.add(1 days) < block.timestamp) {
-            timeStartedMining[tokenId] = block.timestamp;
-            timesMinedIn24Hours[tokenId] = 1;
-            emit StartedMining(tokenId, timeStartedMining[tokenId]);
-        } else if (
-            _timeStartedMining != 0 &&
-            _timeStartedMining.add(1 days) > block.timestamp &&
-            _timesMinedIn24Hours <= maxMinesPerDay
-        ) {
-            timeStartedMining[tokenId] = block.timestamp;
-            timesMinedIn24Hours[tokenId]++;
-            emit StartedMining(tokenId, timeStartedMining[tokenId]);
-        } else if (_timesMinedIn24Hours == maxMinesPerDay) {
-            revert("You can mine up to 2 times per ~24 hours");
-        }
-    }
-
-    // check that user waited at least {timeNeededBeforeClaimingTokens} and not more then {timeNeededBeforeClaimingTokens + 2 minutes} to claim tokens to make it as if he mined with "proof of time"
+    //can mine once every 24 hours per token.
     function claimMiningRewards(uint256 nftId) external notPaused {
-        uint256 _timeStartedMining = timeStartedMining[nftId];
-        uint256 _timesMinedIn24Hours = timesMinedIn24Hours[nftId];
-        uint256 timeNeededBeforeClaimingTokens = _timeStartedMining
-            .add(10 minutes)
-            .mul(_timesMinedIn24Hours);
-        require(_timeStartedMining != 0, "You need to start mining first");
-        require(_timeStartedMining < block.timestamp);
         require(
-            block.timestamp <= timeNeededBeforeClaimingTokens.add(2 minutes),
+            block.timestamp >= lastTimeMined[nftId].add(1 days) ||
+                lastTimeMined[nftId] == 0,
             "Current timestamp is over the limit to claim the tokens"
         );
-
-        // must be owner of token to claim reward, this is a check to make sure the VNFT is alive
         require(
             ownerOf(nftId) == msg.sender,
             "You must own a VNFT to claim rewards"
@@ -264,7 +222,7 @@ contract VNFT is
             burn(nftId);
         } else {
             //reset last start mined so can't remine and cheat
-            timeStartedMining[nftId] = 0;
+            lastTimeMined[nftId] = block.timestamp;
 
             // @TODO send calculated erc20 tokens to user
             token.mint(msg.sender, 1);
@@ -272,7 +230,7 @@ contract VNFT is
         }
     }
 
-    // Vuy accesory to the VNFT
+    // Buy accesory to the VNFT
     function buyAccesory(
         uint256 nftId,
         uint256 itemId,
@@ -355,17 +313,17 @@ contract VNFT is
         super.burn(tokenId);
     }
 
-    // kill starverd tokens to get some of their juice
-    //  @TODO fix this so it can burn if is not owner of death token.
+    // kill starverd NFT and get 10% of his points.
     function fatality(uint256 _deadId, uint256 _tokenId) external notPaused {
         require(
             !isVnftAlive(_deadId),
-            "The vNFT has to be starved to claim his life"
+            "The vNFT has to be starved to claim his points"
         );
         vnftScore[_tokenId] = vnftScore[_tokenId].add(
-            vnftScore[_deadId].sub(2)
+            (vnftScore[_deadId].mul(10).div(100))
         );
-        burn(_deadId);
+        delete vnftDetails[_deadId];
+        _burn(_deadId);
     }
 
     // add items/accessories
