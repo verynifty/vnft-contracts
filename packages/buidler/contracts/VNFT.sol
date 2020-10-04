@@ -90,7 +90,7 @@ contract VNFT is
     mapping(uint256 => VNFTObj) public vnftDetails;
 
     // for example this should be 10% of total coins
-    uint256 public maxDevAllocation = 10000;
+    uint256 public maxDevAllocation = 10000; // @QUESTIONJULES: Watch out we need to take into account the token decimals 
     uint256 public devAllocation = 0;
 
     // External NFTs
@@ -109,7 +109,7 @@ contract VNFT is
 
     // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
-    uint256 public maxFreeVnfts = 100;
+    uint256 public maxFreeVnfts = 100; // @QUESTIONJULES this is not necessary as the claimer will only be able to mint the # of merkletree solutions
     bool public gameStopped = false;
 
     // mining tokens
@@ -127,7 +127,7 @@ contract VNFT is
     mapping(uint256 => uint256) public itemTimeExtension;
 
     event BurnPercentageChanged(uint256 percentage);
-    event StartedMining(uint256 who, uint256 timestamp);
+    // event StartedMining(uint256 who, uint256 timestamp); Not used anymore
     event ClaimedMiningRewards(uint256 who, uint256 amount);
     // event VnftBurned(uint256 id);
     event VnftConsumed(uint256 nftId, uint256 itemId);
@@ -263,6 +263,7 @@ contract VNFT is
             // burn VNFT cause it's dead
 
             // @QUESTIONJULES:: if the pet is starving but not yet killed we should let the person feed it again to make it go back
+            // Then if the nft is dead we add from now the object time given ot previous one
             burn(nftId);
         } else {
             uint256 devFee;
@@ -315,6 +316,7 @@ contract VNFT is
     }
 
     function burn(uint256 tokenId) public override notPaused {
+        // @QUESTIONJULES: missing some logic/check here
         delete vnftDetails[tokenId];
         super.burn(tokenId);
     }
@@ -330,6 +332,16 @@ contract VNFT is
         );
         delete vnftDetails[_deadId];
         _burn(_deadId);
+    }
+
+        // Check how much score you'll get by fatality someone.
+    function getFatalityReward(uint256 _deadId) public view returns (uint256) {
+        if (!isVnftAlive(_deadId))
+        {
+            return 0;
+        } else {
+            return (vnftScore[_deadId].mul(10).div(100));
+        }
     }
 
     // add items/accessories
@@ -409,7 +421,7 @@ contract VNFT is
         vnftDetails[_tokenIds.current()] = VNFTObj(
             supportedNfts[index].token,
             _id
-        );
+        );  // @QUESTIONJULES we need to take into account the reward of the specifi NFT
 
         super.mint(msg.sender);
 
