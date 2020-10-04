@@ -205,7 +205,7 @@ contract VNFT is
     function getRewards(uint256 tokenId) external view returns (uint256) {
         // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
         uint256 _level = this.level(tokenId).mul(1 ether);
-        uint256 _reward = (6 ether).add(_level.div((4 ether).add(uint256(1 ether).div(10.mul(_level)))));
+        uint256 _reward = uint256(6 ether).add(_level.div(uint256(4 ether).add(uint256(1 ether).div(uint256(10).mul(_level)))));
         return (_reward);
     }
 
