@@ -63,6 +63,15 @@ interface IMuseToken {
     function burn(uint256 amount) external;
 }
 
+/*
+* Deployment checklist::
+*  1. Deploy all contracts
+*  2. Give minter role to the claiming contract
+*  3. Add objects (most basic cost 5 and give 1 day and 1 score)
+*  4.
+*/
+
+
 // ERC721,
 contract VNFT is
     Ownable,
@@ -147,7 +156,7 @@ contract VNFT is
     }
 
     // in case a bug happens or we upgrade to another smart contract
-    function pauseGame(bool _pause) external {
+    function pauseGame(bool _pause) external onlyOperator {
         gameStopped = _pause;
     }
 
@@ -175,7 +184,6 @@ contract VNFT is
     // check that VNFT didn't starve
     function isVnftAlive(uint256 _nftId) public view returns (bool) {
         uint256 _timeUntilStarving = timeUntilStarving[_nftId];
-
         if (_timeUntilStarving != 0 && _timeUntilStarving >= block.timestamp) {
             return true;
         }
@@ -187,8 +195,18 @@ contract VNFT is
 
     // get the level the vNFT is on to calculate points
     function level(uint256 tokenId) external view returns (uint256) {
-        uint256 _score = vnftScore[tokenId];
-        return _score.div(10);
+        // This is the formula curve L(score)=(score)/(1+0.14 score)+1
+        uint256 _score = vnftScore[tokenId].mul(1000);
+        uint256 _level = _score.div(1000 + 114.mul(_score).add(1000));
+        return _score.div(1000);
+    }
+
+    // get the level the vNFT is on to calculate the token reward
+    function getRewards(uint256 tokenId) external view returns (uint256) {
+        // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
+        uint256 _level = this.level(tokenId).mul(1 ether);
+        uint256 _reward = (6 ether).plus(_level.div((4 ether).plus((1 ether).div(10.mul(_level)))));
+        return (_reward);
     }
 
     // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
@@ -222,10 +240,9 @@ contract VNFT is
         } else {
             //reset last start mined so can't remine and cheat
             lastTimeMined[nftId] = block.timestamp;
-
-            // @TODO send calculated erc20 tokens to user
-            token.mint(msg.sender, 1);
-            emit ClaimedMiningRewards(nftId, 1);
+            uint256 _reward = this.getRewards(nftId);
+            token.mint(msg.sender, _reward);
+            emit ClaimedMiningRewards(nftId, _reward);
         }
     }
 
@@ -244,6 +261,8 @@ contract VNFT is
         );
         if (!isVnftAlive(nftId)) {
             // burn VNFT cause it's dead
+
+            // @QUESTIONJULES:: if the pet is starving but not yet killed we should let the person feed it again to make it go back
             burn(nftId);
         } else {
             uint256 devFee;
@@ -260,8 +279,6 @@ contract VNFT is
             timeUntilStarving[nftId] = block.timestamp.add(
                 itemTimeExtension[itemId]
             );
-
-            //@TODO calculate new points based on an algorithm
             vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
 
             // burn 90% so they go back to community mining and staking, and send 10% to devs
