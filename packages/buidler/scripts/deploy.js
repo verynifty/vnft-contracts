@@ -16,6 +16,24 @@ async function main() {
   const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
   const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x2a3eb5e4fd7ca38eebd660d4b9879fd3e235cd240772bccdfadfa6c1529b4711"])
 
+  // grant minter role to PetAirdrop
+  await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", PetAirdrop.address);
+  console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n")
+
+  // Grant Miner role to StakeForVnfts
+  await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", StakeForVnfts.address);
+  console.log("🚀 Granted VNFT Minter Role to StakeForVnfts \n")
+
+  // grant miner role to Master Chef
+  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address)
+  console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
+
+
+  // reate an item with 5 points
+  const threeDays = 60 * 60 * 24 * 3
+  await VNFT.createItem("diamond", 5, 1, threeDays)
+  console.log("🚀 added item diamond \n")
+
 }
 
 

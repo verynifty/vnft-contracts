@@ -64,13 +64,12 @@ interface IMuseToken {
 }
 
 /*
-* Deployment checklist::
-*  1. Deploy all contracts
-*  2. Give minter role to the claiming contract
-*  3. Add objects (most basic cost 5 and give 1 day and 1 score)
-*  4.
-*/
-
+ * Deployment checklist::
+ *  1. Deploy all contracts
+ *  2. Give minter role to the claiming contract
+ *  3. Add objects (most basic cost 5 and give 1 day and 1 score)
+ *  4.
+ */
 
 // ERC721,
 contract VNFT is
@@ -89,14 +88,13 @@ contract VNFT is
     // Mapping from token ID to NFT struct details
     mapping(uint256 => VNFTObj) public vnftDetails;
 
-    // for example this should be 10% of total coins
-    uint256 public maxDevAllocation = 10000; // @QUESTIONJULES: Watch out we need to take into account the token decimals 
+    // max dev allocation is 10% of total supply
+    uint256 public maxDevAllocation = 100000 * 10**18;
     uint256 public devAllocation = 0;
 
     // External NFTs
     struct NFTInfo {
         address token; // Address of LP token contract.
-        uint256 reward; // this is to divide points that should be given for mining with this erc721, should be less then mining with our VNFTs. example this is 10 to give 10% less rewards for this nft
         bool active;
         uint256 standard; //the nft standard ERC721 || ERC1155
     }
@@ -109,7 +107,7 @@ contract VNFT is
 
     // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
-    uint256 public maxFreeVnfts = 100; // @QUESTIONJULES this is not necessary as the claimer will only be able to mint the # of merkletree solutions
+
     bool public gameStopped = false;
 
     // mining tokens
@@ -127,9 +125,7 @@ contract VNFT is
     mapping(uint256 => uint256) public itemTimeExtension;
 
     event BurnPercentageChanged(uint256 percentage);
-    // event StartedMining(uint256 who, uint256 timestamp); Not used anymore
     event ClaimedMiningRewards(uint256 who, uint256 amount);
-    // event VnftBurned(uint256 id);
     event VnftConsumed(uint256 nftId, uint256 itemId);
     event VnftMinted(address to);
     event ItemCreated(string name, uint256 price, uint256 points);
@@ -155,6 +151,14 @@ contract VNFT is
         _;
     }
 
+    modifier onlyMinter() {
+        require(
+            hasRole(MINTER_ROLE, _msgSender()),
+            "Roles: caller does not have the MINTER role"
+        );
+        _;
+    }
+
     // in case a bug happens or we upgrade to another smart contract
     function pauseGame(bool _pause) external onlyOperator {
         gameStopped = _pause;
@@ -165,10 +169,6 @@ contract VNFT is
         require(percentage <= 100);
         burnPercentage = burnPercentage;
         emit BurnPercentageChanged(burnPercentage);
-    }
-
-    function changeMaxFreeVnfts(uint256 freeVnftAmount) external onlyOperator {
-        maxFreeVnfts = freeVnftAmount;
     }
 
     function changeMaxDevAllocation(uint256 amount) external onlyOperator {
@@ -205,7 +205,13 @@ contract VNFT is
     function getRewards(uint256 tokenId) external view returns (uint256) {
         // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
         uint256 _level = this.level(tokenId).mul(1 ether);
-        uint256 _reward = uint256(6 ether).add(_level.div(uint256(4 ether).add(uint256(1 ether).div(uint256(10).mul(_level)))));
+        uint256 _reward = uint256(6 ether).add(
+            _level.div(
+                uint256(4 ether).add(
+                    uint256(1 ether).div(uint256(10).mul(_level))
+                )
+            )
+        );
         return (_reward);
     }
 
@@ -225,6 +231,7 @@ contract VNFT is
 
     //can mine once every 24 hours per token.
     function claimMiningRewards(uint256 nftId) external notPaused {
+        require(isVnftAlive(nftId), "Your vNFT is dead, you can't mine");
         require(
             block.timestamp >= lastTimeMined[nftId].add(1 days) ||
                 lastTimeMined[nftId] == 0,
@@ -260,10 +267,9 @@ contract VNFT is
             "You must own the vNFT to give it an accessory"
         );
         if (!isVnftAlive(nftId)) {
+            //@TODO we'll remove it, just thinking
             // burn VNFT cause it's dead
 
-            // @QUESTIONJULES:: if the pet is starving but not yet killed we should let the person feed it again to make it go back
-            // Then if the nft is dead we add from now the object time given ot previous one
             burn(nftId);
         } else {
             uint256 devFee;
@@ -299,10 +305,7 @@ contract VNFT is
         _setBaseURI(baseURI_);
     }
 
-    function mint(address player) public override {
-        // decide this before
-        require(totalSupply() <= maxFreeVnfts);
-
+    function mint(address player) public override onlyMinter {
         //pet minted has 3 days until it starves at first
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(3 days);
         timeVnftBorn[_tokenIds.current()] = block.timestamp;
@@ -316,7 +319,6 @@ contract VNFT is
     }
 
     function burn(uint256 tokenId) public override notPaused {
-        // @QUESTIONJULES: missing some logic/check here
         delete vnftDetails[tokenId];
         super.burn(tokenId);
     }
@@ -334,10 +336,9 @@ contract VNFT is
         _burn(_deadId);
     }
 
-        // Check how much score you'll get by fatality someone.
+    // Check how much score you'll get by fatality someone.
     function getFatalityReward(uint256 _deadId) public view returns (uint256) {
-        if (!isVnftAlive(_deadId))
-        {
+        if (!isVnftAlive(_deadId)) {
             return 0;
         } else {
             return (vnftScore[_deadId].mul(10).div(100));
@@ -364,18 +365,9 @@ contract VNFT is
     //  LOGIC FOR EXTERNAL NFTS
     //  ****************************
     // support an external nft to mine rewards and play
-    function addNft(
-        address _nftToken,
-        uint256 _reward,
-        uint256 _type
-    ) public onlyOperator {
+    function addNft(address _nftToken, uint256 _type) public onlyOperator {
         supportedNfts.push(
-            NFTInfo({
-                token: _nftToken,
-                reward: _reward,
-                active: true,
-                standard: _type
-            })
+            NFTInfo({token: _nftToken, active: true, standard: _type})
         );
     }
 
@@ -385,11 +377,9 @@ contract VNFT is
 
     function updateSupportedNFT(
         uint256 index,
-        uint256 _reward,
         bool _active,
         address _address
     ) public onlyOperator {
-        supportedNfts[index].reward = _reward;
         supportedNfts[index].active = _active;
         supportedNfts[index].token = _address;
     }
@@ -421,8 +411,7 @@ contract VNFT is
         vnftDetails[_tokenIds.current()] = VNFTObj(
             supportedNfts[index].token,
             _id
-        );  // @QUESTIONJULES we need to take into account the reward of the specifi NFT
-
+        );
         super.mint(msg.sender);
 
         emit LifeGiven(index, _id);
