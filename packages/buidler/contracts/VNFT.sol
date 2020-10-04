@@ -197,7 +197,7 @@ contract VNFT is
     function level(uint256 tokenId) external view returns (uint256) {
         // This is the formula curve L(score)=(score)/(1+0.14 score)+1
         uint256 _score = vnftScore[tokenId].mul(1000);
-        uint256 _level = _score.div(1000 + 114.mul(_score).add(1000));
+        uint256 _level = _score.div(1000 + uint256(114).mul(_score).add(1000));
         return _score.div(1000);
     }
 
@@ -205,7 +205,7 @@ contract VNFT is
     function getRewards(uint256 tokenId) external view returns (uint256) {
         // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
         uint256 _level = this.level(tokenId).mul(1 ether);
-        uint256 _reward = (6 ether).plus(_level.div((4 ether).plus((1 ether).div(10.mul(_level)))));
+        uint256 _reward = (6 ether).add(_level.div((4 ether).add(uint256(1 ether).div(10.mul(_level)))));
         return (_reward);
     }
 
