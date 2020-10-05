@@ -24,6 +24,10 @@ async function main() {
   await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", StakeForVnfts.address);
   console.log("🚀 Granted VNFT Minter Role to StakeForVnfts \n")
 
+  // grant miner role to VNFT
+  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", VNFT.address)
+  console.log("🚀 Granted MuseToken Minter Role to VNFT \n")
+  
   // grant miner role to Master Chef
   await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address)
   console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
