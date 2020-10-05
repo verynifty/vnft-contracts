@@ -78,7 +78,8 @@ contract VNFT is
     TokenRecover,
     ERC1155Holder
 {
-    IMuseToken public token;
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    IMuseToken public muse;
 
     struct VNFTObj {
         address token;
@@ -133,11 +134,12 @@ contract VNFT is
     event ItemCreated(string name, uint256 price, uint256 points);
     event LifeGiven(uint256 forSupportedNFT, uint256 id);
 
-    constructor(address _baseToken)
+    constructor(address _museToken)
         public
         ERC721PresetMinterPauserAutoId("VNFT", "VNFT", "api.ourapi.com")
     {
-        token = IMuseToken(_baseToken);
+        _setupRole(OPERATOR_ROLE, _msgSender());
+        muse = IMuseToken(_museToken);
     }
 
     modifier notPaused() {
@@ -247,7 +249,7 @@ contract VNFT is
         //reset last start mined so can't remine and cheat
         lastTimeMined[nftId] = block.timestamp;
         uint256 _reward = this.getRewards(nftId);
-        token.mint(msg.sender, _reward);
+        muse.mint(msg.sender, _reward);
         emit ClaimedMiningRewards(nftId, _reward);
     }
 
@@ -289,11 +291,11 @@ contract VNFT is
             // burn 90% so they go back to community mining and staking, and send 10% to devs
             if (devAllocation <= maxDevAllocation) {
                 devAllocation = devAllocation.add(devFee);
-                token.transferFrom(msg.sender, address(this), devFee);
+                muse.transferFrom(msg.sender, address(this), devFee);
                 // burn 90% of token, 10% stay for dev and community fund
-                token.burn(amountToBurn);
+                muse.burn(amountToBurn);
             } else {
-                token.burn(amount);
+                muse.burn(amount);
             }
             emit VnftConsumed(nftId, itemId);
         }
@@ -412,7 +414,7 @@ contract VNFT is
             _id
         );
         super.mint(msg.sender);
-
+        _tokenIds.increment();
         emit LifeGiven(index, _id);
     }
 
