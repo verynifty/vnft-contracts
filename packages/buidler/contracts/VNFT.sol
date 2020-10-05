@@ -200,7 +200,7 @@ contract VNFT is
         // This is the formula curve L(score)=(score)/(1+0.14 score)+1
         uint256 _score = vnftScore[tokenId].mul(1000);
         uint256 _level = _score.div(1000 + uint256(114).mul(_score).add(1000));
-        return (_level.div(1000));
+        return (_level.div(1000).add(1));
     }
 
     // get the level the vNFT is on to calculate the token reward
