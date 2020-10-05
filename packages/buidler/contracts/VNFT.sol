@@ -416,4 +416,29 @@ contract VNFT is
 
         emit LifeGiven(index, _id);
     }
+
+    // withdraw dead wrapped NFTs or send them to the burn address.
+    function withdraw(
+        uint256 _id,
+        address _contractAddr,
+        address _to,
+        uint256 _type
+    ) external onlyOperator {
+        if (_type == 1155) {
+            IERC1155(_contractAddr).safeTransferFrom(
+                address(this),
+                _to,
+                _id,
+                1,
+                ""
+            );
+        } else if (_type == 721) {
+            IERC721(_contractAddr).safeTransferFrom(
+                address(this),
+                _to,
+                _id,
+                ""
+            );
+        }
+    }
 }
