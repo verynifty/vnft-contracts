@@ -32,7 +32,15 @@ async function main() {
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3
   await VNFT.createItem("diamond", 5, 1, threeDays)
-  console.log("🚀 added item diamond \n")
+  console.log("🚀 added item diamond \n");
+
+
+  // test care taker functions
+  // await VNFT.addCareTaker(1, MasterChef.address);
+  // await VNFT.grantRole("0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929", "0x57245838a670f8de8de3F430157F7e70005203DA")
+  // console.log("🚀 Added care taker")
+
+
 
 }
 

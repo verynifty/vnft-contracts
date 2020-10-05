@@ -124,6 +124,8 @@ contract VNFT is
     mapping(uint256 => string) public itemName;
     mapping(uint256 => uint256) public itemTimeExtension;
 
+    mapping(uint256 => address) public careTaker;
+
     event BurnPercentageChanged(uint256 percentage);
     event ClaimedMiningRewards(uint256 who, uint256 amount);
     event VnftConsumed(uint256 nftId, uint256 itemId);
@@ -238,7 +240,7 @@ contract VNFT is
             "Current timestamp is over the limit to claim the tokens"
         );
         require(
-            ownerOf(nftId) == msg.sender,
+            ownerOf(nftId) == msg.sender || careTaker[nftId] == msg.sender,
             "You must own the vNFT to claim rewards"
         );
 
@@ -436,5 +438,17 @@ contract VNFT is
                 ""
             );
         }
+    }
+
+    // add care taker so in the future if vNFTs are sent to tokenizing platforms like niftex we can whitelist and the previous owner could still mine and do interesting stuff.
+    function addCareTaker(uint256 _tokenId, address _careTaker)
+        external
+        onlyOperator
+    {
+        careTaker[_tokenId] = _careTaker;
+    }
+
+    function clearCareTaker(uint256 _tokenId) external onlyOperator {
+        delete careTaker[_tokenId];
     }
 }
