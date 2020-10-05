@@ -261,7 +261,7 @@ contract VNFT is
         require(itemExists(itemId), "This item doesn't exist");
         require(amount >= itemPrice[itemId], "This item costs more tokens");
         require(
-            ownerOf(nftId) == msg.sender,
+            ownerOf(nftId) == msg.sender || careTaker[nftId] == msg.sender,
             "You must own the vNFT to give it an accessory"
         );
         if (!isVnftAlive(nftId)) {
