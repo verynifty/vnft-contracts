@@ -249,7 +249,6 @@ contract VNFT is
         uint256 _reward = this.getRewards(nftId);
         token.mint(msg.sender, _reward);
         emit ClaimedMiningRewards(nftId, _reward);
-        _tokenIds.increment();
     }
 
     // Buy accesory to the VNFT
@@ -314,6 +313,7 @@ contract VNFT is
             _tokenIds.current()
         );
         super.mint(player);
+        _tokenIds.increment();
         emit VnftMinted(msg.sender);
     }
 
