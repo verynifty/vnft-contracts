@@ -239,18 +239,14 @@ contract VNFT is
         );
         require(
             ownerOf(nftId) == msg.sender,
-            "You must own a VNFT to claim rewards"
+            "You must own the vNFT to claim rewards"
         );
-        if (!isVnftAlive(nftId)) {
-            // burn VNFT cause it's dead
-            burn(nftId);
-        } else {
-            //reset last start mined so can't remine and cheat
-            lastTimeMined[nftId] = block.timestamp;
-            uint256 _reward = this.getRewards(nftId);
-            token.mint(msg.sender, _reward);
-            emit ClaimedMiningRewards(nftId, _reward);
-        }
+
+        //reset last start mined so can't remine and cheat
+        lastTimeMined[nftId] = block.timestamp;
+        uint256 _reward = this.getRewards(nftId);
+        token.mint(msg.sender, _reward);
+        emit ClaimedMiningRewards(nftId, _reward);
     }
 
     // Buy accesory to the VNFT
