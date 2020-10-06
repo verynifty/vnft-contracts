@@ -207,6 +207,7 @@ contract VNFT is
             uint256 _level,
             uint256 _expectedReward,
             uint256 _timeUntilStarving,
+            uint256 _lastTimeMined,
             uint256 _timeVnftBorn,
             address _owner,
             address _token,
@@ -219,6 +220,7 @@ contract VNFT is
         _level = this.level(_nftId);
         _expectedReward = this.getRewards(_nftId);
         _timeUntilStarving = timeUntilStarving[_nftId];
+        _lastTimeMined = lastTimeMined[_nftId];
         _timeVnftBorn = timeVnftBorn[_nftId];
         _owner = this.ownerOf(_nftId);
         _token = vnftDetails[_nftId].token;
@@ -229,7 +231,7 @@ contract VNFT is
     function level(uint256 tokenId) external view returns (uint256) {
         // This is the formula curve L(score)=(score)/(1+0.14 score)+1
         uint256 _score = vnftScore[tokenId].mul(1000);
-        uint256 _level = _score.div(1000 + uint256(114).mul(_score).add(1000));
+        uint256 _level = _score.div(1000 + uint256(114).mul(_score));
         return (_level.div(1000).add(1));
     }
 
