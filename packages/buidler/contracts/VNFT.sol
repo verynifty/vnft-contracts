@@ -197,6 +197,32 @@ contract VNFT is
         return vnftScore[_nftId];
     }
 
+    function getVnftInfo(uint256 _nftId)
+        public
+        view
+        returns (
+            uint256 _vNFT,
+            bool _isAlive,
+            uint256 _score,
+            uint256 _level,
+            uint256 _expectedReward,
+            uint256 _timeUntilStarving,
+            uint256 _timeVnftBorn,
+            address _token,
+            uint256 _tokenId
+        )
+    {
+        _vNFT = _nftId;
+        _isAlive = this.isVnftAlive(_nftId);
+        _score = this.getVnftScore(_nftId);
+        _level = this.level(_nftId);
+        _expectedReward = this.getRewards(_nftId);
+        _timeUntilStarving = timeUntilStarving[_nftId];
+        _timeVnftBorn = timeVnftBorn[_nftId];
+        _token = vnftDetails[_nftId].token;
+        _tokenId = vnftDetails[_nftId].id;
+    }
+
     // get the level the vNFT is on to calculate points
     function level(uint256 tokenId) external view returns (uint256) {
         // This is the formula curve L(score)=(score)/(1+0.14 score)+1
