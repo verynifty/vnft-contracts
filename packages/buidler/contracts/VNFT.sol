@@ -61,6 +61,8 @@ interface IMuseToken {
     function mint(address to, uint256 amount) external;
 
     function burn(uint256 amount) external;
+
+    function burnFrom(address account, uint256 amount) external;
 }
 
 /*
@@ -108,6 +110,7 @@ contract VNFT is
 
     // how many tokens to burn every time the VNFT is given an accessory, the remaining goes to the community and devs
     uint256 public burnPercentage = 90;
+    uint256 public giveLifePrice = 5 * 10**18;
 
     bool public gameStopped = false;
 
@@ -125,7 +128,8 @@ contract VNFT is
     mapping(uint256 => string) public itemName;
     mapping(uint256 => uint256) public itemTimeExtension;
 
-    mapping(uint256 => address) public careTaker;
+    // mapping(uint256 => address) public careTaker;
+    mapping(uint256 => mapping(address => address)) public careTaker;
 
     event BurnPercentageChanged(uint256 percentage);
     event ClaimedMiningRewards(uint256 who, uint256 amount);
@@ -173,6 +177,10 @@ contract VNFT is
         require(percentage <= 100);
         burnPercentage = burnPercentage;
         emit BurnPercentageChanged(burnPercentage);
+    }
+
+    function changeGiveLifePrice(uint256 _newPrice) external onlyOperator {
+        giveLifePrice = _newPrice * 10**18;
     }
 
     function changeMaxDevAllocation(uint256 amount) external onlyOperator {
@@ -276,7 +284,8 @@ contract VNFT is
             "Current timestamp is over the limit to claim the tokens"
         );
         require(
-            ownerOf(nftId) == msg.sender || careTaker[nftId] == msg.sender,
+            ownerOf(nftId) == msg.sender ||
+                careTaker[nftId][ownerOf(nftId)] == msg.sender,
             "You must own the vNFT to claim rewards"
         );
 
@@ -291,48 +300,35 @@ contract VNFT is
     function buyAccesory(
         uint256 nftId,
         uint256 itemId,
-        uint256 amount,
-        uint256 devPercent
+        uint256 amount
     ) external notPaused {
         require(itemExists(itemId), "This item doesn't exist");
         require(amount >= itemPrice[itemId], "This item costs more tokens");
         require(
-            ownerOf(nftId) == msg.sender || careTaker[nftId] == msg.sender,
-            "You must own the vNFT to give it an accessory"
+            ownerOf(nftId) == msg.sender ||
+                careTaker[nftId][ownerOf(nftId)] == msg.sender,
+            "You must own the vNFT or be a care taker to buy items"
         );
-        if (!isVnftAlive(nftId)) {
-            //@TODO we'll remove it, just thinking
-            // burn VNFT cause it's dead
+        require(isVnftAlive(nftId), "Your vNFT is dead");
 
-            burn(nftId);
+        uint256 amountToBurn = amount.mul(burnPercentage).div(100);
+
+        //recalculate timeUntilStarving.
+        timeUntilStarving[nftId] = block.timestamp.add(
+            itemTimeExtension[itemId]
+        );
+        vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
+
+        // burn 90% so they go back to community mining and staking, and send 10% to devs
+        if (devAllocation <= maxDevAllocation) {
+            devAllocation = devAllocation.add(amount.sub(amountToBurn));
+            muse.transferFrom(msg.sender, address(this), amount);
+            // burn 90% of token, 10% stay for dev and community fund
+            muse.burn(amountToBurn);
         } else {
-            uint256 devFee;
-            uint256 amountToBurn;
-            if (devPercent <= 10) {
-                amountToBurn = amount.mul(burnPercentage).div(100);
-                devFee = amount.sub(amountToBurn);
-            } else {
-                devFee = amount.mul(devPercent).div(100);
-                amountToBurn = amount.sub(devFee);
-            }
-
-            //recalculate timeUntilStarving.
-            timeUntilStarving[nftId] = block.timestamp.add(
-                itemTimeExtension[itemId]
-            );
-            vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
-
-            // burn 90% so they go back to community mining and staking, and send 10% to devs
-            if (devAllocation <= maxDevAllocation) {
-                devAllocation = devAllocation.add(devFee);
-                muse.transferFrom(msg.sender, address(this), devFee);
-                // burn 90% of token, 10% stay for dev and community fund
-                muse.burn(amountToBurn);
-            } else {
-                muse.burn(amount);
-            }
-            emit VnftConsumed(nftId, itemId);
+            muse.burnFrom(msg.sender, amount);
         }
+        emit VnftConsumed(nftId, itemId);
     }
 
     function setBaseURI(string memory baseURI_) public onlyOperator {
@@ -425,7 +421,17 @@ contract VNFT is
         uint256 _id,
         uint256 nftType
     ) external notPaused {
-        // transfer the nft to the contract
+        uint256 amountToBurn = giveLifePrice.mul(burnPercentage).div(100);
+
+        if (devAllocation <= maxDevAllocation) {
+            devAllocation = devAllocation.add(giveLifePrice.sub(amountToBurn));
+            muse.transferFrom(msg.sender, address(this), giveLifePrice);
+            // burn 90% of token, 10% stay for dev and community fund
+            muse.burn(amountToBurn);
+        } else {
+            muse.burnFrom(msg.sender, giveLifePrice);
+        }
+
         if (nftType == 721) {
             IERC721(supportedNfts[index].token).transferFrom(
                 msg.sender,
@@ -478,14 +484,21 @@ contract VNFT is
     }
 
     // add care taker so in the future if vNFTs are sent to tokenizing platforms like niftex we can whitelist and the previous owner could still mine and do interesting stuff.
-    function addCareTaker(uint256 _tokenId, address _careTaker)
-        external
-        onlyOperator
-    {
-        careTaker[_tokenId] = _careTaker;
+    function addCareTaker(uint256 _tokenId, address _careTaker) external {
+        require(
+            hasRole(OPERATOR_ROLE, _msgSender()) ||
+                ownerOf(_tokenId) == msg.sender,
+            "Roles: caller does not have the OPERATOR role"
+        );
+        careTaker[_tokenId][msg.sender] = _careTaker;
     }
 
-    function clearCareTaker(uint256 _tokenId) external onlyOperator {
-        delete careTaker[_tokenId];
+    function clearCareTaker(uint256 _tokenId) external {
+        require(
+            hasRole(OPERATOR_ROLE, _msgSender()) ||
+                ownerOf(_tokenId) == msg.sender,
+            "Roles: caller does not have the OPERATOR role"
+        );
+        delete careTaker[_tokenId][msg.sender];
     }
 }

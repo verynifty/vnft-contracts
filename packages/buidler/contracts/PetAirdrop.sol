@@ -36,10 +36,10 @@ contract PetAirdrop {
 
     function claim(uint256 index, bytes32[] calldata merkleProof) external {
         require(!isClaimed(index), "MerkleDistributor: Drop already claimed.");
-        console.logBytes(abi.encodePacked(index));
+        // console.logBytes(abi.encodePacked(index));
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(bytes32(index)));
-        console.logBytes32(node);
+        // console.logBytes32(node);
         require(
             MerkleProof.verify(merkleProof, merkleRoot, node),
             "MerkleDistributor: Invalid proof."
