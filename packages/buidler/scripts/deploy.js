@@ -14,7 +14,7 @@ async function main() {
   const VNFT = await deploy("VNFT", [MuseToken.address])
   const MasterChef = await deploy("MasterChef", [MuseToken.address, 1, 1, 1])
   const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
-  const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x2a3eb5e4fd7ca38eebd660d4b9879fd3e235cd240772bccdfadfa6c1529b4711"])
+  const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556"])
 
   // grant minter role to PetAirdrop
   await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", PetAirdrop.address);

@@ -49,7 +49,7 @@ contract PetAirdrop {
         // Mark it claimed and send the token.
         _setClaimed(index);
 
-        // petMinter.mintPet(msg.sender);
+        petMinter.mint(msg.sender);
 
         emit Claimed(index, msg.sender);
     }

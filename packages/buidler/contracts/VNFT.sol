@@ -208,6 +208,7 @@ contract VNFT is
             uint256 _expectedReward,
             uint256 _timeUntilStarving,
             uint256 _timeVnftBorn,
+            address _owner;
             address _token,
             uint256 _tokenId
         )
@@ -219,6 +220,7 @@ contract VNFT is
         _expectedReward = this.getRewards(_nftId);
         _timeUntilStarving = timeUntilStarving[_nftId];
         _timeVnftBorn = timeVnftBorn[_nftId];
+        _owner = this.ownerOf(_nftId);
         _token = vnftDetails[_nftId].token;
         _tokenId = vnftDetails[_nftId].id;
     }
