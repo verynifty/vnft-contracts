@@ -208,7 +208,7 @@ contract VNFT is
             uint256 _expectedReward,
             uint256 _timeUntilStarving,
             uint256 _timeVnftBorn,
-            address _owner;
+            address _owner,
             address _token,
             uint256 _tokenId
         )
