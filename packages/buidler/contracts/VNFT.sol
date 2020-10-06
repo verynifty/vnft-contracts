@@ -137,6 +137,8 @@ contract VNFT is
     event VnftMinted(address to);
     event ItemCreated(string name, uint256 price, uint256 points);
     event LifeGiven(uint256 forSupportedNFT, uint256 id);
+    event CareTakerAdded(uint256 nftId, address _to);
+    event CareTakerRemoved(uint256 nftId);
 
     constructor(address _museToken)
         public
@@ -219,7 +221,8 @@ contract VNFT is
             uint256 _timeVnftBorn,
             address _owner,
             address _token,
-            uint256 _tokenId
+            uint256 _tokenId,
+            address _careTaker
         )
     {
         _vNFT = _nftId;
@@ -233,6 +236,7 @@ contract VNFT is
         _owner = this.ownerOf(_nftId);
         _token = vnftDetails[_nftId].token;
         _tokenId = vnftDetails[_nftId].id;
+        _careTaker = careTaker[_nftId][ownerOf(_nftId)];
     }
 
     // get the level the vNFT is on to calculate points
@@ -491,6 +495,7 @@ contract VNFT is
             "Roles: caller does not have the OPERATOR role"
         );
         careTaker[_tokenId][msg.sender] = _careTaker;
+        emit CareTakerAdded(_tokenId, _careTaker);
     }
 
     function clearCareTaker(uint256 _tokenId) external {
@@ -500,5 +505,6 @@ contract VNFT is
             "Roles: caller does not have the OPERATOR role"
         );
         delete careTaker[_tokenId][msg.sender];
+        emit CareTakerRemoved(_tokenId);
     }
 }
