@@ -2,7 +2,6 @@ pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
-import "@nomiclabs/buidler/console.sol";
 import "./VNFT.sol";
 
 contract PetAirdrop {

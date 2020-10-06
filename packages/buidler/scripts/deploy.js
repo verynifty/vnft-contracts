@@ -27,16 +27,31 @@ async function main() {
   // grant miner role to VNFT
   await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", VNFT.address)
   console.log("🚀 Granted MuseToken Minter Role to VNFT \n")
-  
+
   // grant miner role to Master Chef
   await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address)
   console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
-
 
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3
   await VNFT.createItem("diamond", 5, 1, threeDays)
   console.log("🚀 added item diamond \n");
+
+
+  // This is to accelerate ui tests
+  await PetAirdrop.claim('7', '0x8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19bJ0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  await PetAirdrop.claim('8', '0xf652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3fJ0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
+
+  await PetAirdrop.claim('9', '0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5aceJ0x3196704a2b58fda17a75cb346654cda44776ee73f6ab009e295270a7f557ae1aJ0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  await VNFT.claimMiningRewards('0')
+  await VNFT.claimMiningRewards('1')
+  await VNFT.claimMiningRewards('2')
+  console.log("🚀 Finished basic mining... \n")
+
+
+
 
 
   // test care taker functions

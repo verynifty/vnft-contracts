@@ -230,17 +230,21 @@ contract VNFT is
     // get the level the vNFT is on to calculate points
     function level(uint256 tokenId) external view returns (uint256) {
         // This is the formula curve L(score)=(score)/(1+0.14 score)+1
-        uint256 _score = vnftScore[tokenId].mul(1000);
-        uint256 _level = _score.div(1000 + uint256(114).mul(_score));
-        return (_level.div(1000).add(1));
+        uint256 _score = vnftScore[tokenId].mul(100000);
+        uint256 _level = _score.div(100000 + _score.mul(1400000).div(10000000));
+        return (_level.add(1));
     }
 
     // get the level the vNFT is on to calculate the token reward
     function getRewards(uint256 tokenId) external view returns (uint256) {
         // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
-        uint256 _level = this.level(tokenId).mul(1 ether);
+        uint256 _level = this.level(tokenId);
+        if (_level == 1) {
+            return (6 ether);
+        }
+        _level = _level.sub(1).mul(1 ether);
         uint256 _reward = uint256(6 ether).add(
-            _level.div(
+            _level.mul(1 ether).div(
                 uint256(4 ether).add(
                     uint256(1 ether).div(uint256(10).mul(_level))
                 )
@@ -267,7 +271,7 @@ contract VNFT is
     function claimMiningRewards(uint256 nftId) external notPaused {
         require(isVnftAlive(nftId), "Your vNFT is dead, you can't mine");
         require(
-            block.timestamp >= lastTimeMined[nftId].add(1 days) ||
+            block.timestamp >= lastTimeMined[nftId].add(1 minutes) ||
                 lastTimeMined[nftId] == 0,
             "Current timestamp is over the limit to claim the tokens"
         );
