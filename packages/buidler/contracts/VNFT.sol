@@ -142,7 +142,11 @@ contract VNFT is
 
     constructor(address _museToken)
         public
-        ERC721PresetMinterPauserAutoId("VNFT", "VNFT", "api.ourapi.com")
+        ERC721PresetMinterPauserAutoId(
+            "VNFT",
+            "VNFT",
+            "https://gallery.verynify.io/api/"
+        )
     {
         _setupRole(OPERATOR_ROLE, _msgSender());
         muse = IMuseToken(_museToken);
@@ -167,6 +171,10 @@ contract VNFT is
             "Roles: caller does not have the MINTER role"
         );
         _;
+    }
+
+    function contractURI() public pure returns (string memory) {
+        return "https://gallery.verynifty.io/api";
     }
 
     // in case a bug happens or we upgrade to another smart contract
@@ -207,6 +215,22 @@ contract VNFT is
         return vnftScore[_nftId];
     }
 
+    function getItemInfo(uint256 _itemId)
+        public
+        view
+        returns (
+            string memory _name,
+            uint256 _price,
+            uint256 _points,
+            uint256 _timeExtension
+        )
+    {
+        _name = itemName[_itemId];
+        _price = itemPrice[_itemId];
+        _timeExtension = itemTimeExtension[_itemId];
+        _points = itemPoints[_itemId];
+    }
+
     function getVnftInfo(uint256 _nftId)
         public
         view
@@ -222,7 +246,7 @@ contract VNFT is
             address _owner,
             address _token,
             uint256 _tokenId,
-            address _careTaker
+            uint256 _fatalityReward
         )
     {
         _vNFT = _nftId;
@@ -236,7 +260,7 @@ contract VNFT is
         _owner = this.ownerOf(_nftId);
         _token = vnftDetails[_nftId].token;
         _tokenId = vnftDetails[_nftId].id;
-        _careTaker = careTaker[_nftId][ownerOf(_nftId)];
+        _fatalityReward = getFatalityReward(_nftId);
     }
 
     // get the level the vNFT is on to calculate points
@@ -313,17 +337,23 @@ contract VNFT is
                 careTaker[nftId][ownerOf(nftId)] == msg.sender,
             "You must own the vNFT or be a care taker to buy items"
         );
-        require(isVnftAlive(nftId), "Your vNFT is dead");
-
+        // require(isVnftAlive(nftId), "Your vNFT is dead");
         uint256 amountToBurn = amount.mul(burnPercentage).div(100);
 
-        //recalculate timeUntilStarving.
-        timeUntilStarving[nftId] = block.timestamp.add(
-            itemTimeExtension[itemId]
-        );
-        vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
-
+        if (!isVnftAlive(nftId)) {
+            vnftScore[nftId] = itemPoints[itemId];
+            timeUntilStarving[nftId] = block.timestamp.add(
+                itemTimeExtension[itemId]
+            );
+        } else {
+            //recalculate timeUntilStarving.
+            timeUntilStarving[nftId] = block.timestamp.add(
+                itemTimeExtension[itemId]
+            );
+            vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
+        }
         // burn 90% so they go back to community mining and staking, and send 10% to devs
+
         if (devAllocation <= maxDevAllocation) {
             devAllocation = devAllocation.add(amount.sub(amountToBurn));
             muse.transferFrom(msg.sender, address(this), amount);
@@ -348,7 +378,7 @@ contract VNFT is
             address(this),
             _tokenIds.current()
         );
-        super.mint(player);
+        super._mint(player, _tokenIds.current());
         _tokenIds.increment();
         emit VnftMinted(msg.sender);
     }
@@ -365,7 +395,7 @@ contract VNFT is
             "The vNFT has to be starved to claim his points"
         );
         vnftScore[_tokenId] = vnftScore[_tokenId].add(
-            (vnftScore[_deadId].mul(10).div(100))
+            (vnftScore[_deadId].mul(60).div(100))
         );
         delete vnftDetails[_deadId];
         _burn(_deadId);
@@ -373,10 +403,10 @@ contract VNFT is
 
     // Check how much score you'll get by fatality someone.
     function getFatalityReward(uint256 _deadId) public view returns (uint256) {
-        if (!isVnftAlive(_deadId)) {
+        if (isVnftAlive(_deadId)) {
             return 0;
         } else {
-            return (vnftScore[_deadId].mul(10).div(100));
+            return (vnftScore[_deadId].mul(50).div(100));
         }
     }
 
@@ -457,7 +487,11 @@ contract VNFT is
             supportedNfts[index].token,
             _id
         );
-        super.mint(msg.sender);
+
+        timeUntilStarving[_tokenIds.current()] = block.timestamp.add(3 days);
+        timeVnftBorn[_tokenIds.current()] = block.timestamp;
+
+        super._mint(msg.sender, _tokenIds.current());
         _tokenIds.increment();
         emit LifeGiven(index, _id);
     }
