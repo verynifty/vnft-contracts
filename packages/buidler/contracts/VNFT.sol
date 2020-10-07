@@ -86,6 +86,7 @@ contract VNFT is
     struct VNFTObj {
         address token;
         uint256 id;
+        uint256 standard; //the type
     }
 
     // Mapping from token ID to NFT struct details
@@ -376,16 +377,12 @@ contract VNFT is
 
         vnftDetails[_tokenIds.current()] = VNFTObj(
             address(this),
-            _tokenIds.current()
+            _tokenIds.current(),
+            721
         );
         super._mint(player, _tokenIds.current());
         _tokenIds.increment();
         emit VnftMinted(msg.sender);
-    }
-
-    function burn(uint256 tokenId) public override notPaused {
-        delete vnftDetails[tokenId];
-        super.burn(tokenId);
     }
 
     // kill starverd NFT and get 10% of his points.
@@ -397,7 +394,7 @@ contract VNFT is
         vnftScore[_tokenId] = vnftScore[_tokenId].add(
             (vnftScore[_deadId].mul(60).div(100))
         );
-        delete vnftDetails[_deadId];
+        // delete vnftDetails[_deadId];
         _burn(_deadId);
     }
 
@@ -449,7 +446,7 @@ contract VNFT is
         supportedNfts[index].token = _address;
     }
 
-    // lets give life to your erc721 token and make it fun to mint $muse!
+    // aka WRAP: lets give life to your erc721 token and make it fun to mint $muse!
     function giveLife(
         uint256 index,
         uint256 _id,
@@ -485,7 +482,8 @@ contract VNFT is
         // mint a vNFT
         vnftDetails[_tokenIds.current()] = VNFTObj(
             supportedNfts[index].token,
-            _id
+            _id,
+            nftType
         );
 
         timeUntilStarving[_tokenIds.current()] = block.timestamp.add(3 days);
@@ -496,6 +494,16 @@ contract VNFT is
         emit LifeGiven(index, _id);
     }
 
+    // unwrap your vNFT if it is not dead, and get back your original NFT
+    function unwrap(uint256 _vnftId) external {
+        require(isVnftAlive(_vnftId), "Your vNFT is dead, you can't unwrap it");
+        transferFrom(msg.sender, address(this), _vnftId);
+        VNFTObj memory details = vnftDetails[_vnftId];
+        timeUntilStarving[_vnftId] = 1;
+        vnftScore[_vnftId] = 0;
+        _withdraw(details.id, details.token, msg.sender, details.standard);
+    }
+
     // withdraw dead wrapped NFTs or send them to the burn address.
     function withdraw(
         uint256 _id,
@@ -503,6 +511,15 @@ contract VNFT is
         address _to,
         uint256 _type
     ) external onlyOperator {
+        _withdraw(_id, _contractAddr, _to, _type);
+    }
+
+    function _withdraw(
+        uint256 _id,
+        address _contractAddr,
+        address _to,
+        uint256 _type
+    ) internal {
         if (_type == 1155) {
             IERC1155(_contractAddr).safeTransferFrom(
                 address(this),
@@ -512,12 +529,7 @@ contract VNFT is
                 ""
             );
         } else if (_type == 721) {
-            IERC721(_contractAddr).safeTransferFrom(
-                address(this),
-                _to,
-                _id,
-                ""
-            );
+            IERC721(_contractAddr).transferFrom(address(this), _to, _id);
         }
     }
 

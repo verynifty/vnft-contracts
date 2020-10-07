@@ -68,7 +68,6 @@ async function main() {
   console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
   await MuseToken.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", (5 * 10 ** 18).toString())
-  await MuseToken.changeCap((500 * 10 ** 18).toString())
 
   // test care taker functions
   // await VNFT.addCareTaker(1, MasterChef.address);
