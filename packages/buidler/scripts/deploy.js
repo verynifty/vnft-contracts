@@ -58,16 +58,16 @@ async function main() {
   console.log("🚀 Finished basic mining... \n")
 
 
-  // terst erc1155 implementation
-  const TestERC1155 = await deploy('TestERC1155', ["google.com"])
-  await TestERC1155.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", 1, 1, 0x0);
+  // // terst erc1155 implementation
+  // const TestERC1155 = await deploy('TestERC1155', ["google.com"])
+  // await TestERC1155.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", 1, 1, 0x0);
 
-  console.log("🚀 Minted sample ERC1155 token \n");
+  // console.log("🚀 Minted sample ERC1155 token \n");
 
-  await VNFT.addNft(TestERC1155.address, 1155);
-  console.log("🚀 Added TEST ERC Contract to vNFT \n");
+  // await VNFT.addNft(TestERC1155.address, 1155);
+  // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
-  await MuseToken.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", (5 * 10 ** 18).toString())
+  await MuseToken.mint("0x712CbAA9F5AFBa8215c21919a60aFC70bf186f35", (5 * 10 ** 18).toString())
 
   // test care taker functions
   // await VNFT.addCareTaker(1, MasterChef.address);
