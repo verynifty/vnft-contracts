@@ -133,11 +133,13 @@ contract VNFT is
     mapping(uint256 => mapping(address => address)) public careTaker;
 
     event BurnPercentageChanged(uint256 percentage);
-    event ClaimedMiningRewards(uint256 who, uint256 amount);
-    event VnftConsumed(uint256 nftId, uint256 itemId);
+    event ClaimedMiningRewards(uint256 who, address owner, uint256 amount);
+    event VnftConsumed(uint256 nftId, address giver, uint256 itemId);
     event VnftMinted(address to);
-    event ItemCreated(string name, uint256 price, uint256 points);
-    event LifeGiven(uint256 forSupportedNFT, uint256 id);
+    event VnftFatalized(uint256 nftId, address killer);
+    event ItemCreated(uint256 id, string name, uint256 price, uint256 points);
+    event LifeGiven(address forSupportedNFT, uint256 id);
+    event Unwrapped(uint256 nftId);
     event CareTakerAdded(uint256 nftId, address _to);
     event CareTakerRemoved(uint256 nftId);
 
@@ -322,7 +324,7 @@ contract VNFT is
         lastTimeMined[nftId] = block.timestamp;
         uint256 _reward = this.getRewards(nftId);
         muse.mint(msg.sender, _reward);
-        emit ClaimedMiningRewards(nftId, _reward);
+        emit ClaimedMiningRewards(nftId, msg.sender, _reward);
     }
 
     // Buy accesory to the VNFT
@@ -362,7 +364,7 @@ contract VNFT is
         } else {
             muse.burnFrom(msg.sender, amount);
         }
-        emit VnftConsumed(nftId, itemId);
+        emit VnftConsumed(nftId, msg.sender, itemId);
     }
 
     function setBaseURI(string memory baseURI_) public onlyOperator {
@@ -395,6 +397,7 @@ contract VNFT is
         );
         // delete vnftDetails[_deadId];
         _burn(_deadId);
+        emit VnftFatalized(_deadId, msg.sender);
     }
 
     // Check how much score you'll get by fatality someone.
@@ -419,7 +422,7 @@ contract VNFT is
         itemPrice[newItemId] = price * 10**18;
         itemPoints[newItemId] = points;
         itemTimeExtension[newItemId] = timeExtension;
-        emit ItemCreated(name, price, points);
+        emit ItemCreated(newItemId, name, price, points);
     }
 
     //  *****************************
@@ -490,7 +493,7 @@ contract VNFT is
 
         super._mint(msg.sender, _tokenIds.current());
         _tokenIds.increment();
-        emit LifeGiven(index, _id);
+        emit LifeGiven(supportedNfts[index].token, _id);
     }
 
     // unwrap your vNFT if it is not dead, and get back your original NFT
@@ -500,6 +503,7 @@ contract VNFT is
         VNFTObj memory details = vnftDetails[_vnftId];
         timeUntilStarving[_vnftId] = 1;
         vnftScore[_vnftId] = 0;
+        emit Unwrapped(_vnftId);
         _withdraw(details.id, details.token, msg.sender, details.standard);
     }
 
