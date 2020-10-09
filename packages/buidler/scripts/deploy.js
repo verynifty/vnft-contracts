@@ -41,10 +41,20 @@ async function main() {
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3
   await VNFT.createItem("diamond", 5, 1, threeDays)
+  await VNFT.createItem("cheat", 1, 10, threeDays)
   console.log("🚀 added item diamond \n");
 
 
   // This is to accelerate ui tests
+
+  await PetAirdrop.claim('3', '0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6J0xc6ac427fb8aaa2487d27a03718825d2ab79856b97c34a6ee73de2ebe3178be0aJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  await PetAirdrop.claim('4', '0xa66cc928b5edb82af9bd49922954155ab7b0942694bea4ce44661d9a8736c688J0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  await PetAirdrop.claim('5', '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563J0x4b73f99ed6e6670bca14ccb20bd0847431f1e31d07779d65ae63d8704e2c8f83J0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  await PetAirdrop.claim('6', '0xf3f7a9fe364faab93b216da50a3214154f22a0a2b415b23a84c8169e8b636ee3J0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
+
   await PetAirdrop.claim('7', '0x8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19bJ0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
   await PetAirdrop.claim('8', '0xf652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3fJ0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
@@ -55,6 +65,9 @@ async function main() {
   await VNFT.claimMiningRewards('0')
   await VNFT.claimMiningRewards('1')
   await VNFT.claimMiningRewards('2')
+  await VNFT.claimMiningRewards('3')
+  await VNFT.claimMiningRewards('4')
+
   console.log("🚀 Finished basic mining... \n")
 
 

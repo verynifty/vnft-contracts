@@ -266,30 +266,43 @@ contract VNFT is
         _fatalityReward = getFatalityReward(_nftId);
     }
 
+    function editCurves(
+        uint256 _la,
+        uint256 _lb,
+        uint256 _ra,
+        uint256 _rb
+    ) external onlyOperator {
+        la = _la;
+        lb = _lb;
+        ra = _ra;
+        lb = _rb;
+    }
+
+    uint256 la = 2;
+    uint256 lb = 2;
+    uint256 ra = 6;
+    uint256 rb = 7;
+
     // get the level the vNFT is on to calculate points
     function level(uint256 tokenId) external view returns (uint256) {
-        // This is the formula curve L(score)=(score)/(1+0.14 score)+1
-        uint256 _score = vnftScore[tokenId].mul(100000);
-        uint256 _level = _score.div(100000 + _score.mul(1400000).div(10000000));
-        return (_level.add(1));
+        // This is the formula L(x) = 2 * sqrt(score * 2)
+        uint256 _score = vnftScore[tokenId];
+        if (_score == 0) {
+            return 1;
+        }
+        uint256 _level = sqrtu(_score.mul(la));
+        return (_level.mul(lb));
     }
 
     // get the level the vNFT is on to calculate the token reward
     function getRewards(uint256 tokenId) external view returns (uint256) {
-        // This is the formula to get token rewards R(level)=5 + (level)/(4+0.1 level)+1
+        // This is the formula to get token rewards R(level)=(level)*6/7+6
         uint256 _level = this.level(tokenId);
         if (_level == 1) {
-            return (6 ether);
+            return 1;
         }
-        _level = _level.sub(1).mul(1 ether);
-        uint256 _reward = uint256(6 ether).add(
-            _level.mul(1 ether).div(
-                uint256(4 ether).add(
-                    uint256(1 ether).div(uint256(10).mul(_level))
-                )
-            )
-        );
-        return (_reward);
+        _level = _level.mul(1 ether).mul(ra).div(rb);
+        return (_level.add(5 ether));
     }
 
     // edit specific item in case token goes up in value and the price for items gets to expensive for normal users.
@@ -552,5 +565,56 @@ contract VNFT is
         );
         delete careTaker[_tokenId][msg.sender];
         emit CareTakerRemoved(_tokenId);
+    }
+
+    /**
+     * Calculate sqrt (x) rounding down, where x is unsigned 256-bit integer
+     * number.
+     *
+     * @param x unsigned 256-bit integer number
+     * @return unsigned 128-bit integer number
+     */
+    function sqrtu(uint256 x) private pure returns (uint128) {
+        if (x == 0) return 0;
+        else {
+            uint256 xx = x;
+            uint256 r = 1;
+            if (xx >= 0x100000000000000000000000000000000) {
+                xx >>= 128;
+                r <<= 64;
+            }
+            if (xx >= 0x10000000000000000) {
+                xx >>= 64;
+                r <<= 32;
+            }
+            if (xx >= 0x100000000) {
+                xx >>= 32;
+                r <<= 16;
+            }
+            if (xx >= 0x10000) {
+                xx >>= 16;
+                r <<= 8;
+            }
+            if (xx >= 0x100) {
+                xx >>= 8;
+                r <<= 4;
+            }
+            if (xx >= 0x10) {
+                xx >>= 4;
+                r <<= 2;
+            }
+            if (xx >= 0x8) {
+                r <<= 1;
+            }
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1;
+            r = (r + x / r) >> 1; // Seven iterations should be enough
+            uint256 r1 = x / r;
+            return uint128(r < r1 ? r : r1);
+        }
     }
 }
