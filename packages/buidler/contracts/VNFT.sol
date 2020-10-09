@@ -299,7 +299,7 @@ contract VNFT is
         // This is the formula to get token rewards R(level)=(level)*6/7+6
         uint256 _level = this.level(tokenId);
         if (_level == 1) {
-            return 1;
+            return 6 ether;
         }
         _level = _level.mul(1 ether).mul(ra).div(rb);
         return (_level.add(5 ether));
