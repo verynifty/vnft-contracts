@@ -412,7 +412,7 @@ contract VNFT is
         if (isVnftAlive(_deadId)) {
             return 0;
         } else {
-            return (vnftScore[_deadId].mul(50).div(100));
+            return (vnftScore[_deadId].mul(60).div(100));
         }
     }
 
