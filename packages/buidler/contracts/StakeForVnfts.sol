@@ -144,11 +144,10 @@ contract StakeForVnfts is Roles {
     function earned(address account) public view returns (uint256) {
         uint256 blockTime = block.timestamp;
         return
-            points[account].add(
-                blockTime.sub(lastUpdateTime[account]).mul(1e18).div(86400).mul(
-                    balance[account].div(1e18)
-                )
-            );
+            balance[account]
+                .mul(blockTime.sub(lastUpdateTime[account]).mul(2314814814000))
+                .div(1e18)
+                .add(points[account]);
     }
 
     function stake(uint256 _amount) external updateReward(msg.sender) {
