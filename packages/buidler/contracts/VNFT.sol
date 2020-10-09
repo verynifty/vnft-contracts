@@ -285,8 +285,8 @@ contract VNFT is
 
     // get the level the vNFT is on to calculate points
     function level(uint256 tokenId) external view returns (uint256) {
-        // This is the formula L(x) = 2 * sqrt(score * 2)
-        uint256 _score = vnftScore[tokenId];
+        // This is the formula L(x) = 2 * sqrt(x * 2)
+        uint256 _score = vnftScore[tokenId].div(100);
         if (_score == 0) {
             return 1;
         }
@@ -359,7 +359,7 @@ contract VNFT is
             );
         } else {
             //recalculate timeUntilStarving.
-            timeUntilStarving[nftId] = timeUntilStarving[nftId].add(
+            timeUntilStarving[nftId] = block.timestamp.add(
                 itemTimeExtension[itemId]
             );
             vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);

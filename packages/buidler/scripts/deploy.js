@@ -40,8 +40,8 @@ async function main() {
 
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3
-  await VNFT.createItem("diamond", 5, 1, threeDays)
-  await VNFT.createItem("cheat", 1, 10, threeDays)
+  await VNFT.createItem("diamond", 5, 100, threeDays)
+  await VNFT.createItem("cheat", 1, 10000, threeDays)
   console.log("🚀 added item diamond \n");
 
 
