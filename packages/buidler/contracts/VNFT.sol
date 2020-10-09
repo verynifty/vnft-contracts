@@ -328,10 +328,7 @@ contract VNFT is
     }
 
     // Buy accesory to the VNFT
-    function buyAccesory(
-        uint256 nftId,
-        uint256 itemId
-    ) external notPaused {
+    function buyAccesory(uint256 nftId, uint256 itemId) external notPaused {
         require(itemExists(itemId), "This item doesn't exist");
         uint256 amount = itemPrice[itemId];
         require(

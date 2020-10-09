@@ -67,7 +67,20 @@ async function main() {
   // await VNFT.addNft(TestERC1155.address, 1155);
   // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
-  await MuseToken.mint("0x712CbAA9F5AFBa8215c21919a60aFC70bf186f35", (5 * 10 ** 18).toString())
+  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 * 10 ** 18).toString())
+  console.log("🚀 minted token to tester user \n");
+
+
+  // TEST ERC721 IMPLEMENTATION
+  const TestERC721 = await deploy('TestERC721')
+  await TestERC721.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
+  console.log("🚀 minted token to user \n");
+
+  // add support for test 721 contract
+  await VNFT.addNft(TestERC721.address, 721);
+  console.log("🚀 Added TEST ERC Contract to vNFT \n");
+
+
 
   // test care taker functions
   // await VNFT.addCareTaker(1, MasterChef.address);

@@ -141,7 +141,7 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
-        name="TestERC1155"
+        name="TestERC721"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
