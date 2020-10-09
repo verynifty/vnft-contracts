@@ -346,7 +346,7 @@ contract VNFT is
             );
         } else {
             //recalculate timeUntilStarving.
-            timeUntilStarving[nftId] = block.timestamp.add(
+            timeUntilStarving[nftId] = timeUntilStarving[nftId].add(
                 itemTimeExtension[itemId]
             );
             vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
