@@ -104,6 +104,7 @@ contract StakeForVnfts is Roles {
     // amount of points needed to redeem a vnft, roughly 1 point is given each day;
     uint256 public vnftPrice = 5 * 10**18;
     uint256 public totalStaked;
+    bool public gameStopped = false;
 
     mapping(address => uint256) public balance;
     mapping(address => uint256) public lastUpdateTime;
@@ -119,6 +120,16 @@ contract StakeForVnfts is Roles {
     constructor(address _vNFT, address _museToken) public {
         vNFT = IERC721(_vNFT);
         museToken = IERC20(_museToken);
+    }
+
+    modifier notPaused() {
+        require(!gameStopped, "Contract is paused");
+        _;
+    }
+
+    // in case a bug happens or we upgrade to another smart contract
+    function pauseGame(bool _pause) external onlyOperator {
+        gameStopped = _pause;
     }
 
     // changes stake requirement
@@ -151,7 +162,11 @@ contract StakeForVnfts is Roles {
             );
     }
 
-    function stake(uint256 _amount) external updateReward(msg.sender) {
+    function stake(uint256 _amount)
+        external
+        updateReward(msg.sender)
+        notPaused
+    {
         require(
             _amount >= minStake,
             "You need to stake at least the min $muse"
@@ -165,9 +180,11 @@ contract StakeForVnfts is Roles {
     }
 
     // withdraw part of your stake
-    function withdraw(uint256 amount) public updateReward(msg.sender) {
+    function withdraw(uint256 amount) internal updateReward(msg.sender) {
         require(amount > 0, "Amount can't be 0");
         require(totalStaked >= amount);
+        points[msg.sender] = 0;
+        lastUpdateTime[msg.sender] = 0;
         balance[msg.sender] = balance[msg.sender].sub(amount);
         totalStaked = totalStaked.sub(amount);
         // transfer erc20 back from the contract to the user
@@ -176,12 +193,12 @@ contract StakeForVnfts is Roles {
     }
 
     // withdraw all your amount staked
-    function exit() external {
+    function exit() external notPaused {
         withdraw(balance[msg.sender]);
     }
 
     //redeem a vNFT based on a set points price
-    function redeem() public updateReward(msg.sender) {
+    function redeem() public updateReward(msg.sender) notPaused {
         require(
             points[msg.sender] >= vnftPrice,
             "Not enough points to redeem vNFT"

@@ -323,7 +323,7 @@ contract VNFT is
     function claimMiningRewards(uint256 nftId) external notPaused {
         require(isVnftAlive(nftId), "Your vNFT is dead, you can't mine");
         require(
-            block.timestamp >= lastTimeMined[nftId].add(1 minutes) ||
+            block.timestamp >= lastTimeMined[nftId].add(1 days) ||
                 lastTimeMined[nftId] == 0,
             "Current timestamp is over the limit to claim the tokens"
         );
@@ -352,16 +352,13 @@ contract VNFT is
         // require(isVnftAlive(nftId), "Your vNFT is dead");
         uint256 amountToBurn = amount.mul(burnPercentage).div(100);
 
+        // recalculate time until starving
+        timeUntilStarving[nftId] = block.timestamp.add(
+            itemTimeExtension[itemId]
+        );
         if (!isVnftAlive(nftId)) {
             vnftScore[nftId] = itemPoints[itemId];
-            timeUntilStarving[nftId] = block.timestamp.add(
-                itemTimeExtension[itemId]
-            );
         } else {
-            //recalculate timeUntilStarving.
-            timeUntilStarving[nftId] = block.timestamp.add(
-                itemTimeExtension[itemId]
-            );
             vnftScore[nftId] = vnftScore[nftId].add(itemPoints[itemId]);
         }
         // burn 90% so they go back to community mining and staking, and send 10% to devs
