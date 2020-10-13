@@ -14,7 +14,9 @@ async function main() {
 
   const MuseToken = await deploy("MuseToken")
   const VNFT = await deploy("VNFT", [MuseToken.address])
-  const MasterChef = await deploy("MasterChef", [MuseToken.address, 1, 1, 1])
+
+  const MasterChef = await deploy("MasterChef", [MuseToken.address, parseInt(7523148148148000)]);
+
   const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
   const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556"])
 
@@ -35,40 +37,62 @@ async function main() {
   await MuseToken.mint('0x821503f2d6990eb6E71fde0CeFf503cE5415b98c', 100000)
 
   // grant miner role to Master Chef
-  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address)
+  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address);
+
+  // add first pool with testERC20
+  await MasterChef.add("aloc", MuseToken.address, true);
+
   console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
 
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3
   await VNFT.createItem("diamond", 5, 100, threeDays)
   await VNFT.createItem("cheat", 1, 10000, threeDays)
+  await VNFT.createItem("cheat", 1, 10000, threeDays)
   console.log("🚀 added item diamond \n");
 
 
-  // This is to accelerate ui tests
+  await VNFT.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
+  console.log("🚀 Minted one vNFT to for test \n");
+  
 
-  await PetAirdrop.claim('3', '0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6J0xc6ac427fb8aaa2487d27a03718825d2ab79856b97c34a6ee73de2ebe3178be0aJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  await PetAirdrop.claim('4', '0xa66cc928b5edb82af9bd49922954155ab7b0942694bea4ce44661d9a8736c688J0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  await PetAirdrop.claim('5', '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563J0x4b73f99ed6e6670bca14ccb20bd0847431f1e31d07779d65ae63d8704e2c8f83J0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+  // // This is to accelerate ui tests
 
-  await PetAirdrop.claim('6', '0xf3f7a9fe364faab93b216da50a3214154f22a0a2b415b23a84c8169e8b636ee3J0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
+  // await PetAirdrop.claim('3', '0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6J0xc6ac427fb8aaa2487d27a03718825d2ab79856b97c34a6ee73de2ebe3178be0aJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  await PetAirdrop.claim('7', '0x8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19bJ0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+  // await PetAirdrop.claim('4', '0xa66cc928b5edb82af9bd49922954155ab7b0942694bea4ce44661d9a8736c688J0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  await PetAirdrop.claim('8', '0xf652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3fJ0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
+  // await PetAirdrop.claim('5', '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563J0x4b73f99ed6e6670bca14ccb20bd0847431f1e31d07779d65ae63d8704e2c8f83J0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  await PetAirdrop.claim('9', '0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5aceJ0x3196704a2b58fda17a75cb346654cda44776ee73f6ab009e295270a7f557ae1aJ0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+  // await PetAirdrop.claim('6', '0xf3f7a9fe364faab93b216da50a3214154f22a0a2b415b23a84c8169e8b636ee3J0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
 
-  // Test merkle tree rewards
-  await VNFT.claimMiningRewards('0')
-  await VNFT.claimMiningRewards('1')
-  await VNFT.claimMiningRewards('2')
-  await VNFT.claimMiningRewards('3')
-  await VNFT.claimMiningRewards('4')
+  // await PetAirdrop.claim('7', '0x8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19bJ0xa8d08734ea7322e06e0a776297d6f37272e6f5a616160a77c77841e0759bf0caJ0x7c38699e734025992b773d48ab4f2ab731d02dd3ea60fdbb9fd3bd722f1a01dfJ0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
 
-  console.log("🚀 Finished basic mining... \n")
+  // await PetAirdrop.claim('8', '0xf652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3fJ0xf7d53e9113effbd163e93d1551923c280edec3d473135737ea978365d41bc83a'.split('J'))
+
+  // await PetAirdrop.claim('9', '0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5aceJ0x3196704a2b58fda17a75cb346654cda44776ee73f6ab009e295270a7f557ae1aJ0x7f7819f69ce525f1b994f0ef767c1d1db1d370e6f56a74ebacf120298f046290J0x599b5b3e642afe03df05b36f7fdb145cc4ae8958fec6884cafe44f9e32e41f28'.split('J'))
+
+  // // Test merkle tree rewards
+  // await VNFT.claimMiningRewards('0')
+  // await VNFT.claimMiningRewards('1')
+  // await VNFT.claimMiningRewards('2')
+  // await VNFT.claimMiningRewards('3')
+  // await VNFT.claimMiningRewards('4')
+
+  // console.log("🚀 Finished basic mining... \n")
+
+
+
+  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 * 10 ** 18).toString())
+  console.log("🚀 minted token to tester user \n");
+
+
+
+  // test ERC20 implementation
+
+const TestERC20 = await deploy("TestERC20");
 
 
   // // terst erc1155 implementation
@@ -80,18 +104,14 @@ async function main() {
   // await VNFT.addNft(TestERC1155.address, 1155);
   // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
-  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 * 10 ** 18).toString())
-  console.log("🚀 minted token to tester user \n");
+  // // TEST ERC721 IMPLEMENTATION
+  // const TestERC721 = await deploy('TestERC721')
+  // await TestERC721.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
+  // console.log("🚀 minted token to user \n");
 
-
-  // TEST ERC721 IMPLEMENTATION
-  const TestERC721 = await deploy('TestERC721')
-  await TestERC721.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
-  console.log("🚀 minted token to user \n");
-
-  // add support for test 721 contract
-  await VNFT.addNft(TestERC721.address, 721);
-  console.log("🚀 Added TEST ERC Contract to vNFT \n");
+  // // add support for test 721 contract
+  // await VNFT.addNft(TestERC721.address, 721);
+  // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
 
 

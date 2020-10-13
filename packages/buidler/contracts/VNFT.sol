@@ -113,6 +113,8 @@ contract VNFT is
     uint256 public burnPercentage = 90;
     uint256 public giveLifePrice = 5 * 10**18;
 
+    uint256 public fatalityPct = 60;
+
     bool public gameStopped = false;
 
     // mining tokens
@@ -183,6 +185,10 @@ contract VNFT is
     // in case a bug happens or we upgrade to another smart contract
     function pauseGame(bool _pause) external onlyOperator {
         gameStopped = _pause;
+    }
+
+    function changeFatalityPct(uint256 _newpct) external onlyOperator {
+        fatalityPct = _newpct;
     }
 
     // change how much to burn on each buy and how much goes to community.
@@ -393,16 +399,17 @@ contract VNFT is
         emit VnftMinted(msg.sender);
     }
 
-    // kill starverd NFT and get 10% of his points.
+    // kill starverd NFT and get fatalityPct of his points.
     function fatality(uint256 _deadId, uint256 _tokenId) external notPaused {
         require(
             !isVnftAlive(_deadId),
             "The vNFT has to be starved to claim his points"
         );
         vnftScore[_tokenId] = vnftScore[_tokenId].add(
-            (vnftScore[_deadId].mul(60).div(100))
+            (vnftScore[_deadId].mul(fatalityPct).div(100))
         );
-        // delete vnftDetails[_deadId];
+        vnftScore[_deadId] = 0;
+        delete vnftDetails[_deadId];
         _burn(_deadId);
         emit VnftFatalized(_deadId, msg.sender);
     }
