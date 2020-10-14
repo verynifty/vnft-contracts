@@ -2,8 +2,6 @@ const fs = require("fs");
 const chalk = require("chalk");
 const { config, ethers } = require("@nomiclabs/buidler");
 
-
-
 async function main() {
   console.log("📡 Deploy \n");
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
@@ -125,10 +123,21 @@ console.log("🚀 Minted Fake LP1 Token \n")
   await LP1.approve(MasterChef.address, (100 + "000000000000000000"));
   p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
   console.log("Pending muse should the multiplier amount after 1 block", p.toString())
-  await MasterChef.withdraw(0, p.toString());
+
+  let lpTokensBal = await MasterChef.userInfo(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  lpTokensBal = lpTokensBal.amount.toString()
+
+  // withdraw lp tokens balance and does claculation to muse
+  await MasterChef.withdraw(0, lpTokensBal.toString());
   
   b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
-  console.log("Balance after withdraw", b.toString())
+  console.log("Balance of LP tokens after withdraw", b.toString())
+
+
+  const museBalance = await MuseToken.balanceOf("0xc783df8a850f42e7F7e57013759C285caa701eB6").toString()
+  console.log("Balance of Muse tokens after withdraw",museBalance )
+
   
   // // terst erc1155 implementation
   // const TestERC1155 = await deploy('TestERC1155', ["google.com"])
