@@ -15,7 +15,7 @@ async function main() {
   const MuseToken = await deploy("MuseToken")
   const VNFT = await deploy("VNFT", [MuseToken.address])
 
-  const MasterChef = await deploy("MasterChef", [MuseToken.address, parseInt(7523148148148000), VNFT.address]);
+  const MasterChef = await deploy("MasterChef", [MuseToken.address, "7523148148148000", VNFT.address]);
 
   const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
   const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556"])
@@ -83,7 +83,7 @@ async function main() {
 
 
 
-  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 * 10 ** 18).toString())
+  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 + "000000000000000000"))
   console.log("🚀 minted token to tester user \n");
 
 
@@ -92,7 +92,7 @@ async function main() {
 // test ERC20 implementation
 const LP1 = await deploy("LP1");
 // this is with the address I use to test, change it to yours
-await LP1.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", (100 * 10**18).toString());
+await LP1.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", (100 + "000000000000000000"));
 
 console.log("🚀 Minted Fake LP1 Token \n")
 
@@ -109,14 +109,27 @@ console.log("🚀 Minted Fake LP1 Token \n")
   
 
   // approve masterchef with fake lp token 
-  await LP1.approve(MasterChef.address, (100 * 10**18).toString());
+  await LP1.approve(MasterChef.address, (100 + "000000000000000000"));
   console.log("🚀 approved lp tokens spend to MasterChef \n")
-
+  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
+  console.log("Initial balance of user", b.toString())
   // deposit lp tokens into masterchef
-  await MasterChef.deposit(0, (100 * 10**18).toString());
 
   console.log("🚀 Deposit 100 LP1 Fake tokens into MasterChef \n")
+  await MasterChef.deposit(0, (100 + "000000000000000000").toString());
+  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  console.log("Pending muse should be 0 after 0 block", p.toString())
+  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
+  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
 
+  await LP1.approve(MasterChef.address, (100 + "000000000000000000"));
+  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  console.log("Pending muse should the multiplier amount after 1 block", p.toString())
+  await MasterChef.withdraw(0, p.toString());
+  
+  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
+  console.log("Balance after withdraw", b.toString())
+  
   // // terst erc1155 implementation
   // const TestERC1155 = await deploy('TestERC1155', ["google.com"])
   // await TestERC1155.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", 1, 1, 0x0);
