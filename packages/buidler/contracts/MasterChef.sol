@@ -1379,6 +1379,8 @@ interface IMuseToken {
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
 contract MasterChef is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -1411,6 +1413,9 @@ contract MasterChef is Ownable {
 
     // The MUSE TOKEN!
     IMuseToken public muse;
+    // The vNFTs
+    IERC721 public vnft;
+
     // Dev address.
     address public devaddr;
     // Block number when bonus MUSE period ends.
@@ -1439,12 +1444,19 @@ contract MasterChef is Ownable {
         uint256 amount
     );
 
-    constructor(address _muse, uint256 _musePerBlock) public {
+    constructor(
+        address _muse,
+        uint256 _musePerBlock,
+        address _vnft
+    ) public {
         muse = IMuseToken(_muse);
         devaddr = msg.sender;
         musePerBlock = _musePerBlock;
-        bonusEndBlock = block.number.add(46523);
-        startBlock = block.number;
+        vnft = IERC721(_vnft);
+        // bonusEndBlock = block.number.add(46523);
+        bonusEndBlock = 2;
+        // startBlock = block.number;
+        startBlock = 1;
     }
 
     function poolLength() external view returns (uint256) {
@@ -1531,24 +1543,30 @@ contract MasterChef is Ownable {
         view
         returns (uint256)
     {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][_user];
-        uint256 accMusePerShare = pool.accMusePerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier = getMultiplier(
-                pool.lastRewardBlock,
-                block.number
-            );
-            uint256 museReward = multiplier
-                .mul(musePerBlock)
-                .mul(pool.allocPoint)
-                .div(totalAllocPoint);
-            accMusePerShare = accMusePerShare.add(
-                museReward.mul(1e12).div(lpSupply)
-            );
+        // if the staker doesn't own an nft then return 0 reward.
+        if (vnft.balanceOf(_user) == 0) {
+            return 0;
+        } else {
+            PoolInfo storage pool = poolInfo[_pid];
+            UserInfo storage user = userInfo[_pid][_user];
+            uint256 accMusePerShare = pool.accMusePerShare;
+            uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+            if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+                uint256 multiplier = getMultiplier(
+                    pool.lastRewardBlock,
+                    block.number
+                );
+                uint256 museReward = multiplier
+                    .mul(musePerBlock)
+                    .mul(pool.allocPoint)
+                    .div(totalAllocPoint);
+                accMusePerShare = accMusePerShare.add(
+                    museReward.mul(1e12).div(lpSupply)
+                );
+            }
+            return
+                user.amount.mul(accMusePerShare).div(1e12).sub(user.rewardDebt);
         }
-        return user.amount.mul(accMusePerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -1584,6 +1602,11 @@ contract MasterChef is Ownable {
 
     // Deposit LP tokens to MasterChef for Muse allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
+        // require to own at least one vNFT
+        require(
+            vnft.balanceOf(msg.sender) > 0,
+            "You must own at least 1 vNFT to stake"
+        );
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -1607,18 +1630,25 @@ contract MasterChef is Ownable {
 
     // Withdraw LP tokens from MasterChef.
     function withdraw(uint256 _pid, uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        require(user.amount >= _amount, "withdraw: not good");
-        updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accMusePerShare).div(1e12).sub(
-            user.rewardDebt
-        );
-        safeMuseTransfer(msg.sender, pending);
-        user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accMusePerShare).div(1e12);
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
-        emit Withdraw(msg.sender, _pid, _amount);
+        // if he doesn't own a vNFT when withdrawing, send him stake without rewards
+        if (vnft.balanceOf(msg.sender) == 0) {
+            emergencyWithdraw(_pid);
+        } else {
+            PoolInfo storage pool = poolInfo[_pid];
+            UserInfo storage user = userInfo[_pid][msg.sender];
+            require(user.amount >= _amount, "withdraw: not good");
+            updatePool(_pid);
+            uint256 pending = user
+                .amount
+                .mul(pool.accMusePerShare)
+                .div(1e12)
+                .sub(user.rewardDebt);
+            safeMuseTransfer(msg.sender, pending);
+            user.amount = user.amount.sub(_amount);
+            user.rewardDebt = user.amount.mul(pool.accMusePerShare).div(1e12);
+            pool.lpToken.safeTransfer(address(msg.sender), _amount);
+            emit Withdraw(msg.sender, _pid, _amount);
+        }
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.

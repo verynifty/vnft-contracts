@@ -134,26 +134,50 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
-        name="StakeForVnfts"
-        signer={userProvider.getSigner()}
+      name="LP1"
+      signer={userProvider.getSigner()}
+      provider={localProvider}
+      address={address}
+      blockExplorer={blockExplorer}
+    />
+    <Contract
+    name="LP2"
+    signer={userProvider.getSigner()}
+    provider={localProvider}
+    address={address}
+    blockExplorer={blockExplorer}
+  />
+   <Contract
+       name="TestERC721"
+       signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
         blockExplorer={blockExplorer}
       />
-      <Contract
-        name="TestERC721"
-        signer={userProvider.getSigner()}
+
+
+      
+       {/* <Contract
+      //   name="StakeForVnfts"
+      //   signer={userProvider.getSigner()}
+      //   provider={localProvider}
+      //   address={address}
+      //   blockExplorer={blockExplorer}
+      // />
+      // <Contract
+      //   name="TestERC721"
+      //   signer={userProvider.getSigner()}
+      //   provider={localProvider}
+      //   address={address}
+      //   blockExplorer={blockExplorer}
+      // />
+      // <Contract
+      //   name="PetAirdrop"
+      //   signer={userProvider.getSigner()}
         provider={localProvider}
-        address={address}
-        blockExplorer={blockExplorer}
-      />
-      <Contract
-        name="PetAirdrop"
-        signer={userProvider.getSigner()}
-        provider={localProvider}
-        address={address}
-        blockExplorer={blockExplorer}
-      />
+      //   address={address}
+      //   blockExplorer={blockExplorer}
+      // />*/}
 
       {/*
         ⚙️ Here is an example UI that displays and sets the purpose in your smart contract:

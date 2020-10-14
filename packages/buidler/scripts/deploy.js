@@ -15,7 +15,7 @@ async function main() {
   const MuseToken = await deploy("MuseToken")
   const VNFT = await deploy("VNFT", [MuseToken.address])
 
-  const MasterChef = await deploy("MasterChef", [MuseToken.address, parseInt(7523148148148000)]);
+  const MasterChef = await deploy("MasterChef", [MuseToken.address, parseInt(7523148148148000), VNFT.address]);
 
   const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
   const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556"])
@@ -39,8 +39,6 @@ async function main() {
   // grant miner role to Master Chef
   await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address);
 
-  // add first pool with testERC20
-  await MasterChef.add("aloc", MuseToken.address, true);
 
   console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
 
@@ -52,7 +50,7 @@ async function main() {
   console.log("🚀 added item diamond \n");
 
 
-  await VNFT.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
   console.log("🚀 Minted one vNFT to for test \n");
   
 
@@ -90,10 +88,34 @@ async function main() {
 
 
 
-  // test ERC20 implementation
 
-const TestERC20 = await deploy("TestERC20");
+// test ERC20 implementation
+const LP1 = await deploy("LP1");
+// this is with the address I use to test, change it to yours
+await LP1.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", (100 * 10**18).toString());
 
+console.log("🚀 Minted Fake LP1 Token \n")
+
+// 2nd  fake lp token in case 
+// const LP2 = await deploy("LP2");
+// await LP2.mint("0x712CbAA9F5AFBa8215c21919a60aFC70bf186f35", (100 * 10**18).toString())
+
+
+  // add first pool with testERC20
+  await MasterChef.add(100, LP1.address, true);
+
+    console.log("🚀 Added a pool to MasterChef \n")
+
+  
+
+  // approve masterchef with fake lp token 
+  await LP1.approve(MasterChef.address, (100 * 10**18).toString());
+  console.log("🚀 approved lp tokens spend to MasterChef \n")
+
+  // deposit lp tokens into masterchef
+  await MasterChef.deposit(0, (100 * 10**18).toString());
+
+  console.log("🚀 Deposit 100 LP1 Fake tokens into MasterChef \n")
 
   // // terst erc1155 implementation
   // const TestERC1155 = await deploy('TestERC1155', ["google.com"])
@@ -104,9 +126,9 @@ const TestERC20 = await deploy("TestERC20");
   // await VNFT.addNft(TestERC1155.address, 1155);
   // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
-  // // TEST ERC721 IMPLEMENTATION
+  // // // TEST ERC721 IMPLEMENTATION
   // const TestERC721 = await deploy('TestERC721')
-  // await TestERC721.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4");
+  // await TestERC721.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
   // console.log("🚀 minted token to user \n");
 
   // // add support for test 721 contract
