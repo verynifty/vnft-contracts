@@ -6,7 +6,15 @@ import { Row, Col, Button, List } from "antd";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { useUserAddress } from "eth-hooks";
-import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useEventListener } from "./hooks";
+import {
+  useExchangePrice,
+  useGasPrice,
+  useUserProvider,
+  useContractLoader,
+  useContractReader,
+  useBalance,
+  useEventListener,
+} from "./hooks";
 import { Header, Account, Faucet, Ramp, Contract, GasGauge, Address } from "./components";
 import { Transactor } from "./helpers";
 import { parseEther } from "@ethersproject/units";
@@ -27,7 +35,7 @@ import Hints from "./Hints";
 import { INFURA_ID, ETHERSCAN_KEY } from "./constants";
 
 // 🔭 block explorer URL
-const blockExplorer = "https://etherscan.io/" // for xdai: "https://blockscout.com/poa/xdai/"
+const blockExplorer = "https://etherscan.io/"; // for xdai: "https://blockscout.com/poa/xdai/"
 
 // 🛰 providers
 console.log("📡 Connecting to Mainnet Ethereum");
@@ -35,9 +43,6 @@ const mainnetProvider = getDefaultProvider("mainnet", { infura: INFURA_ID, ether
 // const mainnetProvider = new InfuraProvider("mainnet",INFURA_ID);
 // const mainnetProvider = new JsonRpcProvider("https://mainnet.infura.io/v3/5ce0898319eb4f5c9d4c982c8f78392a")
 // ( ⚠️ Getting "failed to meet quorum" errors? Check your INFURA_ID)
-
-
-
 
 // 🏠 Your local provider is usually pointed at your local blockchain
 const localProviderUrl = "http://localhost:8545"; // for xdai: https://dai.poa.network
@@ -61,31 +66,31 @@ function App() {
   const address = useUserAddress(userProvider);
 
   // The transactor wraps transactions and provides notificiations
-  const tx = Transactor(userProvider, gasPrice)
+  const tx = Transactor(userProvider, gasPrice);
 
   // 🏗 scaffold-eth is full of handy hooks like this one to get your balance:
   const yourLocalBalance = useBalance(localProvider, address);
-  console.log("💵 yourLocalBalance", yourLocalBalance)
+  console.log("💵 yourLocalBalance", yourLocalBalance);
 
   // just plug in different 🛰 providers to get your balance on different chains:
   const yourMainnetBalance = useBalance(mainnetProvider, address);
-  console.log("💵 yourMainnetBalance", yourMainnetBalance)
+  console.log("💵 yourMainnetBalance", yourMainnetBalance);
 
   // Load in your local 📝 contract and read a value from it:
-  const readContracts = useContractLoader(localProvider)
-  console.log("📝 readContracts", readContracts)
+  const readContracts = useContractLoader(localProvider);
+  console.log("📝 readContracts", readContracts);
 
   // keep track of a variable from the contract in the local React state:
-  const purpose = useContractReader(readContracts, "YourContract", "purpose")
-  console.log("🤗 purpose:", purpose)
+  const purpose = useContractReader(readContracts, "YourContract", "purpose");
+  console.log("🤗 purpose:", purpose);
 
   // If you want to make 🔐 write transactions to your contracts, use the userProvider:
-  const writeContracts = useContractLoader(userProvider)
-  console.log("🔐 writeContracts", writeContracts)
+  const writeContracts = useContractLoader(userProvider);
+  console.log("🔐 writeContracts", writeContracts);
 
   //📟 Listen for broadcast events
   const setPurposeEvents = useEventListener(readContracts, "YourContract", "SetPurpose", localProvider, 1);
-  console.log("📟 SetPurpose events:", setPurposeEvents)
+  console.log("📟 SetPurpose events:", setPurposeEvents);
 
   const loadWeb3Modal = useCallback(async () => {
     const provider = await web3Modal.connect();
@@ -100,7 +105,6 @@ function App() {
 
   return (
     <div className="App">
-
       {/* ✏️ Edit the header and change the title to your project name */}
       <Header />
 
@@ -110,9 +114,15 @@ function App() {
           and give you a form to interact with it locally
       */}
 
-
       <Contract
         name="VNFT"
+        signer={userProvider.getSigner()}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+      />
+      <Contract
+        name="Nanny"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
@@ -133,31 +143,16 @@ function App() {
         address={address}
         blockExplorer={blockExplorer}
       />
+
       <Contract
-      name="LP1"
-      signer={userProvider.getSigner()}
-      provider={localProvider}
-      address={address}
-      blockExplorer={blockExplorer}
-    />
-    <Contract
-    name="LP2"
-    signer={userProvider.getSigner()}
-    provider={localProvider}
-    address={address}
-    blockExplorer={blockExplorer}
-  />
-   <Contract
-       name="TestERC721"
-       signer={userProvider.getSigner()}
+        name="TestERC721"
+        signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
         blockExplorer={blockExplorer}
       />
 
-
-      
-       {/* <Contract
+      {/* <Contract
       //   name="StakeForVnfts"
       //   signer={userProvider.getSigner()}
       //   provider={localProvider}
@@ -187,49 +182,67 @@ function App() {
         <h2>{purpose}</h2>
 
         <div style={{ margin: 8 }}>
-          <Button onClick={() => {
-            /* look how you call setPurpose on your contract: */
-            tx(writeContracts.YourContract.setPurpose("🐖 Don't hog the block!"))
-          }}>Set Purpose</Button>
+          <Button
+            onClick={() => {
+              /* look how you call setPurpose on your contract: */
+              tx(writeContracts.YourContract.setPurpose("🐖 Don't hog the block!"));
+            }}
+          >
+            Set Purpose
+          </Button>
         </div>
 
         <div style={{ margin: 8 }}>
-          <Button onClick={() => {
-            /*
+          <Button
+            onClick={() => {
+              /*
               you can also just craft a transaction and send it to the tx() transactor
               here we are sending value straight to the contract's address:
             */
-            tx({
-              to: writeContracts.YourContract.address,
-              value: parseEther("0.001")
-            });
-            /* this should throw an error about "no fallback nor receive function" until you add it */
-          }}>Send Value</Button>
+              tx({
+                to: writeContracts.YourContract.address,
+                value: parseEther("0.001"),
+              });
+              /* this should throw an error about "no fallback nor receive function" until you add it */
+            }}
+          >
+            Send Value
+          </Button>
         </div>
 
         <div style={{ margin: 8 }}>
-          <Button onClick={() => {
-            /* look how we call setPurpose AND send some value along */
-            tx(writeContracts.YourContract.setPurpose("💵 Paying for this one!", {
-              value: parseEther("0.001")
-            }))
-            /* this will fail until you make the setPurpose function payable */
-          }}>Set Purpose With Value</Button>
+          <Button
+            onClick={() => {
+              /* look how we call setPurpose AND send some value along */
+              tx(
+                writeContracts.YourContract.setPurpose("💵 Paying for this one!", {
+                  value: parseEther("0.001"),
+                }),
+              );
+              /* this will fail until you make the setPurpose function payable */
+            }}
+          >
+            Set Purpose With Value
+          </Button>
         </div>
-
 
         <div style={{ margin: 8 }}>
-          <Button onClick={() => {
-            /* you can also just craft a transaction and send it to the tx() transactor */
-            tx({
-              to: writeContracts.YourContract.address,
-              value: parseEther("0.001"),
-              data: writeContracts.YourContract.interface.encodeFunctionData("setPurpose(string)", ["🤓 Whoa so 1337!"])
-            });
-            /* this should throw an error about "no fallback nor receive function" until you add it */
-          }}>Another Example</Button>
+          <Button
+            onClick={() => {
+              /* you can also just craft a transaction and send it to the tx() transactor */
+              tx({
+                to: writeContracts.YourContract.address,
+                value: parseEther("0.001"),
+                data: writeContracts.YourContract.interface.encodeFunctionData("setPurpose(string)", [
+                  "🤓 Whoa so 1337!",
+                ]),
+              });
+              /* this should throw an error about "no fallback nor receive function" until you add it */
+            }}
+          >
+            Another Example
+          </Button>
         </div>
-
       </div>
 
       {/*
@@ -242,11 +255,7 @@ function App() {
           dataSource={setPurposeEvents}
           renderItem={item => (
             <List.Item>
-              <Address
-                value={item[0]}
-                ensProvider={mainnetProvider}
-                fontSize={16}
-              /> =>
+              <Address value={item[0]} ensProvider={mainnetProvider} fontSize={16} /> =>
               {item[1]}
             </List.Item>
           )}
@@ -291,31 +300,33 @@ function App() {
             >
               <span style={{ marginRight: 8 }} role="img" aria-label="support">
                 💬
-               </span>
-               Support
-             </Button>
+              </span>
+              Support
+            </Button>
           </Col>
         </Row>
 
         <Row align="middle" gutter={[4, 4]}>
           <Col span={24}>
             {
-
               /*  if the local provider has a signer, let's show the faucet:  */
-              localProvider && localProvider.connection && localProvider.connection.url && localProvider.connection.url.indexOf("localhost") >= 0 && !process.env.REACT_APP_PROVIDER && price > 1 ? (
+              localProvider &&
+              localProvider.connection &&
+              localProvider.connection.url &&
+              localProvider.connection.url.indexOf("localhost") >= 0 &&
+              !process.env.REACT_APP_PROVIDER &&
+              price > 1 ? (
                 <Faucet localProvider={localProvider} price={price} ensProvider={mainnetProvider} />
               ) : (
-                  ""
-                )
+                ""
+              )
             }
           </Col>
         </Row>
       </div>
-
-    </div >
+    </div>
   );
 }
-
 
 /*
   Web3 modal helps us "connect" external wallets:

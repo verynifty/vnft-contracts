@@ -9,50 +9,72 @@ async function main() {
   // OR
   // custom deploy (to use deployed addresses)
 
+  const MuseToken = await deploy("MuseToken");
+  const VNFT = await deploy("VNFT", [MuseToken.address]);
 
-  const MuseToken = await deploy("MuseToken")
-  const VNFT = await deploy("VNFT", [MuseToken.address])
+  const MasterChef = await deploy("MasterChef", [
+    MuseToken.address,
+    "7523148148148000",
+    VNFT.address,
+  ]);
 
-  const MasterChef = await deploy("MasterChef", [MuseToken.address, "7523148148148000", VNFT.address]);
-
-  const StakeForVnfts = await deploy("StakeForVnfts", [VNFT.address, MuseToken.address])
-  const PetAirdrop = await deploy("PetAirdrop", [VNFT.address, "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556"])
+  const StakeForVnfts = await deploy("StakeForVnfts", [
+    VNFT.address,
+    MuseToken.address,
+  ]);
+  const PetAirdrop = await deploy("PetAirdrop", [
+    VNFT.address,
+    "0x331d49138d6f29e1a3e96b1179a95f6551f5c10daedea65c3230eb8ba4658556",
+  ]);
 
   // grant minter role to PetAirdrop
-  await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", PetAirdrop.address);
-  console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n")
+  await VNFT.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    PetAirdrop.address
+  );
+  console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n");
 
   // Grant Miner role to StakeForVnfts
-  await VNFT.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", StakeForVnfts.address);
-  console.log("🚀 Granted VNFT Minter Role to StakeForVnfts \n")
+  await VNFT.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    StakeForVnfts.address
+  );
+  console.log("🚀 Granted VNFT Minter Role to StakeForVnfts \n");
 
   // grant miner role to VNFT
-  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", VNFT.address)
-  console.log("🚀 Granted MuseToken Minter Role to VNFT \n")
+  await MuseToken.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    VNFT.address
+  );
+  console.log("🚀 Granted MuseToken Minter Role to VNFT \n");
 
   // mint to other user to test erc1155 works
 
-  await MuseToken.mint('0x821503f2d6990eb6E71fde0CeFf503cE5415b98c', 100000)
+  await MuseToken.mint("0x821503f2d6990eb6E71fde0CeFf503cE5415b98c", 100000);
 
   // grant miner role to Master Chef
-  await MuseToken.grantRole("0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6", MasterChef.address);
+  await MuseToken.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    MasterChef.address
+  );
 
-
-  console.log("🚀 Granted MuseToken Minter Role to MasterChef \n")
+  console.log("🚀 Granted MuseToken Minter Role to MasterChef \n");
 
   // reate an item with 5 points
-  const threeDays = 60 * 60 * 24 * 3
-  await VNFT.createItem("diamond", 5, 100, threeDays)
-  await VNFT.createItem("cheat", 1, 10000, threeDays)
-  await VNFT.createItem("cheat", 1, 10000, threeDays)
+  const threeDays = 60 * 60 * 24 * 3;
+  await VNFT.createItem("diamond", 5, 100, threeDays);
+  await VNFT.createItem("cheat", 1, 10000, 60 * 60 * 24);
+  await VNFT.createItem("cheat", 1, 10000, threeDays);
   console.log("🚀 added item diamond \n");
 
+  const Nanny = await deploy("Nanny", [VNFT.address, MuseToken.address, 1]);
+  console.log("🚀 Deployed Nanny! \n");
 
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
   console.log("🚀 Minted one vNFT to for test \n");
-  
 
-
+  await VNFT.addCareTaker(0, Nanny.address);
+  console.log("🚀 added Nanny as caretaker \n");
 
   // // This is to accelerate ui tests
 
@@ -77,68 +99,6 @@ async function main() {
   // await VNFT.claimMiningRewards('3')
   // await VNFT.claimMiningRewards('4')
 
-  // console.log("🚀 Finished basic mining... \n")
-
-
-
-  await MuseToken.mint("0x047F606fD5b2BaA5f5C6c4aB8958E45CB6B054B7", (10 + "000000000000000000"))
-  console.log("🚀 minted token to tester user \n");
-
-
-
-
-// test ERC20 implementation
-const LP1 = await deploy("LP1");
-// this is with the address I use to test, change it to yours
-await LP1.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", (100 + "000000000000000000"));
-
-console.log("🚀 Minted Fake LP1 Token \n")
-
-// 2nd  fake lp token in case 
-// const LP2 = await deploy("LP2");
-// await LP2.mint("0x712CbAA9F5AFBa8215c21919a60aFC70bf186f35", (100 * 10**18).toString())
-
-
-  // add first pool with testERC20
-  await MasterChef.add(100, LP1.address, true);
-
-    console.log("🚀 Added a pool to MasterChef \n")
-
-  
-
-  // approve masterchef with fake lp token 
-  await LP1.approve(MasterChef.address, (100 + "000000000000000000"));
-  console.log("🚀 approved lp tokens spend to MasterChef \n")
-  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
-  console.log("Initial balance of user", b.toString())
-  // deposit lp tokens into masterchef
-
-  console.log("🚀 Deposit 100 LP1 Fake tokens into MasterChef \n")
-  await MasterChef.deposit(0, (100 + "000000000000000000").toString());
-  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
-  console.log("Pending muse should be 0 after 0 block", p.toString())
-  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
-  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
-
-  await LP1.approve(MasterChef.address, (100 + "000000000000000000"));
-  p = await MasterChef.pendingMuse(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
-  console.log("Pending muse should the multiplier amount after 1 block", p.toString())
-
-  let lpTokensBal = await MasterChef.userInfo(0, "0xc783df8a850f42e7F7e57013759C285caa701eB6");
-
-  lpTokensBal = lpTokensBal.amount.toString()
-
-  // withdraw lp tokens balance and does claculation to muse
-  await MasterChef.withdraw(0, lpTokensBal.toString());
-  
-  b = await LP1.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6')
-  console.log("Balance of LP tokens after withdraw", b.toString())
-
-
-  const museBalance = await MuseToken.balanceOf("0xc783df8a850f42e7F7e57013759C285caa701eB6").toString()
-  console.log("Balance of Muse tokens after withdraw",museBalance )
-
-  
   // // terst erc1155 implementation
   // const TestERC1155 = await deploy('TestERC1155', ["google.com"])
   // await TestERC1155.mint("0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4", 1, 1, 0x0);
@@ -157,20 +117,11 @@ console.log("🚀 Minted Fake LP1 Token \n")
   // await VNFT.addNft(TestERC721.address, 721);
   // console.log("🚀 Added TEST ERC Contract to vNFT \n");
 
-
-
   // test care taker functions
   // await VNFT.addCareTaker(1, MasterChef.address);
   // await VNFT.grantRole("0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929", "0x57245838a670f8de8de3F430157F7e70005203DA")
   // console.log("🚀 Added care taker")
-
-
-
 }
-
-
-
-
 
 async function deploy(name, _args) {
   const args = _args || [];
@@ -219,7 +170,6 @@ async function autoDeploy() {
       );
     }, Promise.resolve([]));
 }
-
 
 main()
   .then(() => process.exit(0))
