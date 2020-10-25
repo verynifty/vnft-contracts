@@ -12,12 +12,14 @@ async function main() {
   const MuseToken = await deploy("MuseToken");
   const VNFT = await deploy("VNFT", [MuseToken.address]);
 
-  const Lottery = await deploy("NiftyLottery", [VNFT.address, MuseToken.address]);
+  const Lottery = await deploy("NiftyLottery", [
+    VNFT.address,
+    MuseToken.address,
+  ]);
 
-  await ethers.provider.send("evm_increaseTime", [60 * 60 *24])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
 
-  
   await VNFT.grantRole(
     "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
     Lottery.address
@@ -31,7 +33,10 @@ async function main() {
   );
   console.log("🚀 Granted MuseToken Minter Role to VNFT \n");
 
-  await MuseToken.mint("0xc783df8a850f42e7f7e57013759c285caa701eb6", "10000000000000000000000");
+  await MuseToken.mint(
+    "0xc783df8a850f42e7f7e57013759c285caa701eb6",
+    "10000000000000000000000"
+  );
 
   // reate an item with 5 points
   const threeDays = 60 * 60 * 24 * 3;
@@ -46,84 +51,76 @@ async function main() {
 
   console.log("🚀 Minted one vNFT to for test \n");
 
-    await Lottery.startLottery(2, 6);
-     infos = await Lottery.getInfos()
-    console.log(infos)
-    await MuseToken.approve(Lottery.address, "10000000000000000000000")
+  await Lottery.startLottery(2, 6);
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await MuseToken.approve(Lottery.address, "10000000000000000000000");
 
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
 
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
 
-    await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
 
+  infos = await Lottery.getInfos();
+  console.log(infos);
 
-    await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
 
-    await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-
-     infos = await Lottery.getInfos()
-    console.log(infos)
-
-    await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-     infos = await Lottery.getInfos()
-    console.log(infos)
-
-    await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- await ethers.provider.send("evm_increaseTime", [60 * 60 *24 + 2])   // add 1day 
-  await ethers.provider.send("evm_mine")      // mine the next block
-  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6")
-  infos = await Lottery.getInfos()
- console.log(infos)
- 
-
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+  await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+  infos = await Lottery.getInfos();
+  console.log(infos);
 
   // mint to other user to test erc1155 works
-
-  
-
 }
 
 async function deploy(name, _args) {

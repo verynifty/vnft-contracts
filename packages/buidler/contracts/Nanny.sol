@@ -28,6 +28,11 @@ interface IVNFT {
         external
         view
         returns (uint256 _time);
+
+    function lastTimeMined(uint256 _tokenId)
+        external
+        view
+        returns (uint256 _time);
 }
 
 contract TokenRecover is Ownable {
@@ -67,13 +72,22 @@ contract Nanny is Ownable, TokenRecover {
         muse.approve(address(vnft), MAX_INT);
     }
 
+    modifier canClaimRewards(uint256 petId) {
+        uint256 lastTimeMined = vnft.lastTimeMined(petId);
+        require(lastTimeMined + 1 days < now, "Can't mine yet");
+        _;
+    }
+
+    function timeUntilReward(uint256 petId) public view returns (uint256) {
+        uint256 lastTimeMined = vnft.lastTimeMined(petId);
+        return lastTimeMined.add(1 days).sub(block.timestamp);
+    }
+
     /**
         @notice Claim rewards and feed a pet if hungry, a % goes to the pet owner.
         @dev Original pet owner must add contract as care taker  
      */
-
-    //maybe later  (bool success, ) = vnft.delegatecall(abi.encodeWithSignature("claimMiningRewards(uint256)", petId));
-    function claimRewards(uint256 petId) external {
+    function claimRewards(uint256 petId) external canClaimRewards(petId) {
         uint256 _timeUntilStarving = vnft.timeUntilStarving(petId);
 
         vnft.claimMiningRewards(petId);
