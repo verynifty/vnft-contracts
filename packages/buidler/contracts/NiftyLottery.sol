@@ -61,7 +61,7 @@ contract NiftyLottery is Ownable, TokenRecover {
         muse = _muse;
     }
 
-    function startLottery(uint256 _gem, uint256 _days) public onlyOwner {
+    function startLottery(uint256 _gem, uint256 _days) external onlyOwner {
         gem = _gem;
         currentRound = currentRound + 1;
         end = now + _days * 1 days;
@@ -98,7 +98,7 @@ contract NiftyLottery is Ownable, TokenRecover {
         _currentRound = currentRound;
     }
 
-    function buyTicket(address _player) public {
+    function buyTicket(address _player) external {
         require(start != 0, "The lottery did not start yet");
         if (now > end) {
             endLottery();
