@@ -52,7 +52,7 @@ async function main() {
   console.log("🚀 Minted one vNFT to for test \n");
 
   await Lottery.startLottery(2, 8);
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await MuseToken.approve(Lottery.address, "10000000000000000000000");
 
@@ -62,47 +62,47 @@ async function main() {
 
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
 
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
 
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
 
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
   await Lottery.buyTicket("0xc783df8a850f42e7f7e57013759c285caa701eb6");
-  infos = await Lottery.getInfos();
+  infos = await Lottery.getInfos("0xc783df8a850f42e7f7e57013759c285caa701eb6");
   console.log(infos);
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block

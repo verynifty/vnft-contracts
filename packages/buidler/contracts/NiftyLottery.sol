@@ -50,6 +50,11 @@ contract NiftyLottery is Ownable, TokenRecover {
         address winner3,
         address winner4
     );
+    
+    event LotteryTicketBought(
+        address participant,
+        uint256 tickets
+    );
 
     constructor(VNFT _vnft, MuseToken _muse) public {
         vnft = _vnft;
@@ -67,7 +72,7 @@ contract NiftyLottery is Ownable, TokenRecover {
         emit LotteryStarted(currentRound, start, end, currentVNFT, gem);
     }
 
-    function getInfos()
+    function getInfos(address player)
         public
         view
         returns (
@@ -77,7 +82,9 @@ contract NiftyLottery is Ownable, TokenRecover {
             uint256 _museSize,
             uint256 _gem,
             uint256 _currentVNFT,
-            uint256 _gemPrice
+            uint256 _gemPrice,
+            uint256 _ownerTickets,
+            uint256 _currentRound
         )
     {
         _participants = players[currentRound].length;
@@ -87,6 +94,8 @@ contract NiftyLottery is Ownable, TokenRecover {
         _gem = gem;
         _currentVNFT = currentVNFT;
         _gemPrice = vnft.itemPrice(gem);
+        _ownerTickets = ticketsByPlayers[currentRound][player];
+        _currentRound = currentRound;
     }
 
     function buyTicket(address _player) public {
@@ -116,13 +125,12 @@ contract NiftyLottery is Ownable, TokenRecover {
                 ticketsByPlayers[currentRound][_player] +
                 1;
         }
+        emit LotteryTicketBought(_player, tickets);
     }
 
     function endLottery() public {
         require(now > end && end != 0);
         uint256 museBalance = muse.balanceOf(address(this));
-        // burn 25%
-        muse.burn(museBalance.mul(25).div(100));
 
         end = 0;
         start = 0;
@@ -154,6 +162,9 @@ contract NiftyLottery is Ownable, TokenRecover {
             players[currentRound].length
         )];
         require(muse.transfer(winner4, museBalance.mul(19).div(100)));
+
+        //burn the leftover (25%)
+        muse.burn(muse.balanceOf(address(this)));
 
         emit LotteryEnded(
             currentRound,
