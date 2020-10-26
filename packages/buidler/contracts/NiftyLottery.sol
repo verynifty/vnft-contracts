@@ -65,7 +65,7 @@ contract NiftyLottery is Ownable, TokenRecover {
         start = now;
         muse.approve(address(vnft), MAX_INT);
         vnft.mint(address(this));
-        currentVNFT = vnft.totalSupply() - 1;
+        currentVNFT = vnft.tokenOfOwnerByIndex(address(this), vnft.balanceOf(address(this)) - 1);
         emit LotteryStarted(currentRound, start, end, currentVNFT, gem);
     }
 
