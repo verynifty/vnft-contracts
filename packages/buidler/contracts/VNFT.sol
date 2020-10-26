@@ -329,7 +329,7 @@ contract VNFT is
     function claimMiningRewards(uint256 nftId) external notPaused {
         require(isVnftAlive(nftId), "Your vNFT is dead, you can't mine");
         require(
-            block.timestamp >= lastTimeMined[nftId].add(1 minutes) ||
+            block.timestamp >= lastTimeMined[nftId].add(1 days) ||
                 lastTimeMined[nftId] == 0,
             "Current timestamp is over the limit to claim the tokens"
         );
