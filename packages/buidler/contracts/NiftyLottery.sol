@@ -50,11 +50,8 @@ contract NiftyLottery is Ownable, TokenRecover {
         address winner3,
         address winner4
     );
-    
-    event LotteryTicketBought(
-        address participant,
-        uint256 tickets
-    );
+
+    event LotteryTicketBought(address participant, uint256 tickets);
 
     constructor(VNFT _vnft, MuseToken _muse) public {
         vnft = _vnft;

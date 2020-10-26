@@ -70,6 +70,13 @@ async function main() {
   const Nanny = await deploy("Nanny", [VNFT.address, MuseToken.address, 1]);
   console.log("🚀 Deployed Nanny! \n");
 
+  const MintTogether = await deploy("MintTogether", [
+    VNFT.address,
+    MuseToken.address,
+    StakeForVnfts.address,
+  ]);
+  console.log("🚀 Deployed MintTogether! \n");
+
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
   console.log("🚀 Minted one vNFT to for test \n");
 
