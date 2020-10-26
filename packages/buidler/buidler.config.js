@@ -3,6 +3,7 @@ const { utils } = require("ethers");
 const fs = require("fs");
 
 usePlugin("@nomiclabs/buidler-waffle");
+usePlugin("@nomiclabs/buidler-etherscan");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -54,10 +55,9 @@ module.exports = {
       },
     },
     mainnet: {
-      url: "https://mainnet.infura.io/v3/c954231486fa42ccb6d132b406483d14",//<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      url: "https://mainnet.infura.io/v3/412acf21edf5444a8c9f6bd737cf8ca3",
+      accounts: [],
+      gasPrice: 69000000000
     },
     ropsten: {
       url: "https://ropsten.infura.io/v3/b4d22fafc6e54126ab244670d8b4878a",//<---- YOUR INFURA ID! (or it won't work)
@@ -72,6 +72,7 @@ module.exports = {
         mnemonic: mnemonic(),
       },
     },
+  
   },
   solc: {
     version: "0.6.6",
@@ -79,6 +80,13 @@ module.exports = {
       enabled: true,
       runs: 200,
     },
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: "XTRMAM5BB3V6MHN8ACDVH2D4D284SVMBNF",
+    url: "https://api.etherscan.io/"
+
   },
   // paths: {
   //   sources: "./contracts/6",

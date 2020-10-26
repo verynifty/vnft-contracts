@@ -17,7 +17,7 @@ async function main() {
     MuseToken.address,
   ]);
 
-  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24]); // add 1day
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 8]); // add 1day
   await ethers.provider.send("evm_mine"); // mine the next block
 
   await VNFT.grantRole(
