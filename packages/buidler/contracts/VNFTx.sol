@@ -14,10 +14,16 @@ contract VNFTx is Ownable {
     IVNFT public vnft;
     IMuseToken public muse;
 
-    mapping(uint256 => string) public addonName;
-    mapping(uint256 => uint256) public addonPrice;
-    mapping(uint256 => uint256) public addonRarity;
+    struct Addon {
+        string name;
+        uint256 price;
+        uint256 rarity;
+    }
 
+    mapping(uint256 => Addon) public addon;
+    mapping(uint256 => uint256[]) public addonsConsumed;
+
+    //nft to rarity points
     mapping(uint256 => uint256) public rarity;
 
     using Counters for Counters.Counter;
@@ -34,19 +40,19 @@ contract VNFTx is Ownable {
 
     /*Addons */
 
-    function getAddon(uint256 _id)
-        public
-        view
-        returns (
-            string memory _addonName,
-            uint256 _addonPrice,
-            uint256 _addonRarity
-        )
-    {
-        _addonName = addonName[_id];
-        _addonPrice = addonPrice[_id];
-        _addonRarity = addonRarity[_id];
-    }
+    // function getAddon(uint256 _id)
+    //     public
+    //     view
+    //     returns (
+    //         string memory _addonName,
+    //         uint256 _addonPrice,
+    //         uint256 _addonRarity
+    //     )
+    // {
+    //     _addonName = addonName[_id];
+    //     _addonPrice = addonPrice[_id];
+    //     _addonRarity = addonRarity[_id];
+    // }
 
     function buyAddon(uint256 _nftId, uint256 addonId) external {
         require(
@@ -55,8 +61,12 @@ contract VNFTx is Ownable {
             "You must own the vNFT or be a care taker to buy items"
         );
 
-        rarity[_nftId] = rarity[_nftId].add(addonRarity[addonId]);
-        muse.burnFrom(msg.sender, addonPrice[_addonId.current()]);
+        Addon storage _addon = addon[addonId];
+
+        addonsConsumed[_nftId].push(addonId);
+
+        rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
+        muse.burnFrom(msg.sender, _addon.price);
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
 
@@ -67,9 +77,9 @@ contract VNFTx is Ownable {
     ) external onlyOwner {
         _addonId.increment();
         uint256 newAddonId = _addonId.current();
-        addonName[newAddonId] = name;
-        addonPrice[newAddonId] = price * 10**18;
-        addonRarity[newAddonId] = _rarity;
+
+        addon[newAddonId] = Addon(name, price, _rarity);
+
         emit CreateAddon(newAddonId, name, _rarity);
     }
 
@@ -79,9 +89,11 @@ contract VNFTx is Ownable {
         uint256 price,
         uint256 _rarity
     ) external onlyOwner {
-        addonName[_id] = name;
-        addonPrice[_id] = price * 10**18;
-        addonRarity[_id] = _rarity;
+        Addon storage _addon = addon[_id];
+
+        _addon.name = name;
+        _addon.price = price * 10**18;
+        _addon.rarity = _rarity;
         emit EditAddon(_id, name, price);
     }
 
@@ -90,7 +102,9 @@ contract VNFTx is Ownable {
     /* start Challenge */
 
     // @TODO challenge someone or kill someoen based on conditions
-    function challenge() external {}
+    // function challenge(uint256 _nftId) external {
+    //     if (vnft.lastTimeMined(_nftId).add(1 days) == xy) {}
+    // }
 
     /* end Challenge */
 }
