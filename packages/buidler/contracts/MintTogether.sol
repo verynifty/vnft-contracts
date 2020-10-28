@@ -6,21 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@nomiclabs/buidler/console.sol";
 
-interface IVNFT {
-    // function ownerOf(uint256 _tokenId) external view returns (address _owner);
-
-    function totalSupply() external view returns (uint256);
-}
-
-interface IstakeContract {
-    function stake(uint256 _amount) external;
-
-    function redeem() external;
-
-    function earned(address account) external view returns (uint256 _earned);
-
-    function exit() external;
-}
+import "./interfaces/IStakeForVnfts.sol";
+import "./interfaces/IVNFT.sol";
 
 contract MintTogether is Ownable {
     mapping(uint256 => address[]) public stakers;
@@ -30,7 +17,7 @@ contract MintTogether is Ownable {
     using SafeMath for uint256;
     IVNFT public vnft;
     IERC20 public muse;
-    IstakeContract public stakeContract;
+    IStakeForVnfts public stakeContract;
 
     address winner;
     uint256 currentRound = 1;
@@ -45,7 +32,7 @@ contract MintTogether is Ownable {
     constructor(
         IVNFT _vnft,
         IERC20 _muse,
-        IstakeContract _stakeContract
+        IStakeForVnfts _stakeContract
     ) public {
         vnft = _vnft;
         muse = _muse;
