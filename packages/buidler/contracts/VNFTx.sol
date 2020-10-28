@@ -39,21 +39,6 @@ contract VNFTx is Ownable {
     event EditAddon(uint256 addonId, string name, uint256 price);
 
     /*Addons */
-
-    // function getAddon(uint256 _id)
-    //     public
-    //     view
-    //     returns (
-    //         string memory _addonName,
-    //         uint256 _addonPrice,
-    //         uint256 _addonRarity
-    //     )
-    // {
-    //     _addonName = addonName[_id];
-    //     _addonPrice = addonPrice[_id];
-    //     _addonRarity = addonRarity[_id];
-    // }
-
     function buyAddon(uint256 _nftId, uint256 addonId) external {
         require(
             vnft.ownerOf(_nftId) == msg.sender ||
