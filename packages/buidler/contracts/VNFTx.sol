@@ -64,7 +64,7 @@ contract VNFTx is Ownable {
         string calldata name,
         uint256 price,
         uint256 _rarity
-    ) external returns (bool) {
+    ) external onlyOwner {
         _addonId.increment();
         uint256 newAddonId = _addonId.current();
         addonName[newAddonId] = name;
@@ -78,7 +78,7 @@ contract VNFTx is Ownable {
         string calldata name,
         uint256 price,
         uint256 _rarity
-    ) external {
+    ) external onlyOwner {
         addonName[_id] = name;
         addonPrice[_id] = price * 10**18;
         addonRarity[_id] = _rarity;
