@@ -14,10 +14,14 @@ contract VNFTx is Ownable {
     IVNFT public vnft;
     IMuseToken public muse;
 
+    uint256 public artistPct = 5;
+
     struct Addon {
         string name;
         uint256 price;
         uint256 rarity;
+        string artistName;
+        address artist;
     }
 
     mapping(uint256 => Addon) public addon;
@@ -51,19 +55,24 @@ contract VNFTx is Ownable {
         addonsConsumed[_nftId].push(addonId);
 
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
-        muse.burnFrom(msg.sender, _addon.price);
+
+        uint256 artistCut = _addon.price.mul(artistPct).div(100);
+        muse.transferFrom(msg.sender, _addon.artist, artistCut);
+        muse.burnFrom(msg.sender, _addon.price.sub(artistCut));
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
 
     function createAddon(
         string calldata name,
         uint256 price,
-        uint256 _rarity
+        uint256 _rarity,
+        string calldata _artistName,
+        address _artist
     ) external onlyOwner {
         _addonId.increment();
         uint256 newAddonId = _addonId.current();
 
-        addon[newAddonId] = Addon(name, price, _rarity);
+        addon[newAddonId] = Addon(name, price, _rarity, _artistName, _artist);
 
         emit CreateAddon(newAddonId, name, _rarity);
     }
@@ -72,13 +81,17 @@ contract VNFTx is Ownable {
         uint256 _id,
         string calldata name,
         uint256 price,
-        uint256 _rarity
+        uint256 _rarity,
+        string calldata _artistName,
+        address _artist
     ) external onlyOwner {
         Addon storage _addon = addon[_id];
 
         _addon.name = name;
         _addon.price = price * 10**18;
         _addon.rarity = _rarity;
+        _addon.artistName = _artistName;
+        _addon.artist = _artist;
         emit EditAddon(_id, name, price);
     }
 
