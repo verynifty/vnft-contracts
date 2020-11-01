@@ -3,13 +3,18 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/presets/ERC1155PresetMinterPauser.sol";
 
-import "./interfaces/IStakeForVnfts.sol";
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
 
 contract VNFTx is Ownable {
     using SafeMath for uint256;
+
+    //for upgradability
+    address public delegateContract;
+    address[] public previousDelegates;
+    uint256 public total = 1;
 
     IVNFT public vnft;
     IMuseToken public muse;
@@ -27,27 +32,34 @@ contract VNFTx is Ownable {
     mapping(uint256 => Addon) public addon;
     mapping(uint256 => uint256[]) public addonsConsumed;
 
-    //nft to rarity points
+    //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
 
-    constructor(IVNFT _vnft, IMuseToken _muse) public {
-        vnft = _vnft;
-        muse = _muse;
-    }
-
+    event DelegateChanged(address oldAddress, address newAddress);
     event BuyAddon(uint256 nftId, uint256 addon, address player);
     event CreateAddon(uint256 addonId, string name, uint256 rarity);
     event EditAddon(uint256 addonId, string name, uint256 price);
+
+    constructor(
+        IVNFT _vnft,
+        IMuseToken _muse,
+        address _mainContract
+    ) public {
+        vnft = _vnft;
+        muse = _muse;
+        delegateContract = _mainContract;
+        previousDelegates.push(delegateContract);
+    }
 
     /*Addons */
     function buyAddon(uint256 _nftId, uint256 addonId) external {
         require(
             vnft.ownerOf(_nftId) == msg.sender ||
                 vnft.careTaker(_nftId, vnft.ownerOf(_nftId)) == msg.sender,
-            "You must own the vNFT or be a care taker to buy items"
+            "You must own the vNFT or be a care taker to buy addons"
         );
 
         Addon storage _addon = addon[addonId];
@@ -60,6 +72,31 @@ contract VNFTx is Ownable {
         muse.transferFrom(msg.sender, _addon.artist, artistCut);
         muse.burnFrom(msg.sender, _addon.price.sub(artistCut));
         emit BuyAddon(_nftId, addonId, msg.sender);
+    }
+
+    /* end Addons */
+
+    // perform an action on delegate contract
+    function action(string memory _signature, uint256 nftId) public {
+        (bool success, ) = delegateContract.delegatecall(
+            abi.encodeWithSignature(_signature, nftId)
+        );
+
+        require(success, "Action error");
+    }
+
+    /* ADMIN FUNCTIONS */
+
+    function changeDelegate(address _newDelegate) external onlyOwner {
+        require(
+            _newDelegate != delegateContract,
+            "New delegate should be diff"
+        );
+        previousDelegates.push(delegateContract);
+        address oldDelegate = delegateContract;
+        delegateContract = _newDelegate;
+        total = total++;
+        DelegateChanged(oldDelegate, _newDelegate);
     }
 
     function createAddon(
@@ -95,14 +132,7 @@ contract VNFTx is Ownable {
         emit EditAddon(_id, name, price);
     }
 
-    /* end Addons */
-
-    /* start Challenge */
-
-    // @TODO challenge someone or kill someoen based on conditions
-    // function challenge(uint256 _nftId) external {
-    //     if (vnft.lastTimeMined(_nftId).add(1 days) == xy) {}
-    // }
-
-    /* end Challenge */
+    function setArtistPct(uint256 _newPct) external onlyOwner {
+        artistPct = _newPct;
+    }
 }

@@ -122,30 +122,21 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
-        name="Nanny"
+        name="VNFTx"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
         blockExplorer={blockExplorer}
       />
       <Contract
-        name="MasterChef"
+        name="V1"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
         blockExplorer={blockExplorer}
       />
-
       <Contract
         name="MuseToken"
-        signer={userProvider.getSigner()}
-        provider={localProvider}
-        address={address}
-        blockExplorer={blockExplorer}
-      />
-
-      <Contract
-        name="TestERC721"
         signer={userProvider.getSigner()}
         provider={localProvider}
         address={address}
