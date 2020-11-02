@@ -72,17 +72,25 @@ async function main() {
 
   // deploy VNFTx.sol
 
+  const Addons = await deploy("Addons", [
+    "https://gallery.verynifty.io/api/addon/",
+  ]);
+
+  console.log("🚀 Deployed Addons \n");
+
   const V1 = await deploy("V1", []);
   const VNFTx = await deploy("VNFTx", [
     VNFT.address,
     MuseToken.address,
     V1.address,
+    Addons.address,
   ]);
 
   console.log("🚀 Deployed VNFTx \n");
 
+  // run action function to test delegate contract
   const challenge = await VNFTx.action("challenge1(uint256)", 0);
-  console.log("claimed rewards", challenge);
+  console.log("action on delegate contract", challenge);
 }
 
 async function deploy(name, _args) {

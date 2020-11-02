@@ -3,14 +3,107 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/presets/ERC1155PresetMinterPauser.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
+// import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
-contract VNFTx is Ownable {
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.6.2;
+
+import "@openzeppelin/contracts/introspection/IERC165.sol";
+
+interface IERC1155 is IERC165 {
+    event TransferSingle(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256 id,
+        uint256 value
+    );
+
+    event TransferBatch(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256[] ids,
+        uint256[] values
+    );
+
+    event ApprovalForAll(
+        address indexed account,
+        address indexed operator,
+        bool approved
+    );
+
+    event URI(string value, uint256 indexed id);
+
+    function balanceOf(address account, uint256 id)
+        external
+        view
+        returns (uint256);
+
+    function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids)
+        external
+        view
+        returns (uint256[] memory);
+
+    function setApprovalForAll(address operator, bool approved) external;
+
+    function isApprovedForAll(address account, address operator)
+        external
+        view
+        returns (bool);
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes calldata data
+    ) external;
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) external;
+
+    function mint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes calldata data
+    ) external;
+
+    function mintBatch(
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) external;
+
+    function burn(
+        address account,
+        uint256 id,
+        uint256 value
+    ) external;
+
+    function burnBatch(
+        address account,
+        uint256[] calldata ids,
+        uint256[] calldata values
+    ) external;
+}
+
+contract VNFTx is Ownable, ERC1155Holder {
     using SafeMath for uint256;
 
+    bool paused = false;
     //for upgradability
     address public delegateContract;
     address[] public previousDelegates;
@@ -18,6 +111,7 @@ contract VNFTx is Ownable {
 
     IVNFT public vnft;
     IMuseToken public muse;
+    IERC1155 public addons;
 
     uint256 public artistPct = 5;
 
@@ -27,6 +121,8 @@ contract VNFTx is Ownable {
         uint256 rarity;
         string artistName;
         address artist;
+        uint256 quantity;
+        uint256 used;
     }
 
     mapping(uint256 => Addon) public addon;
@@ -46,38 +142,112 @@ contract VNFTx is Ownable {
     constructor(
         IVNFT _vnft,
         IMuseToken _muse,
-        address _mainContract
+        address _mainContract,
+        IERC1155 _addons
     ) public {
         vnft = _vnft;
         muse = _muse;
+        addons = _addons;
         delegateContract = _mainContract;
         previousDelegates.push(delegateContract);
     }
 
-    /*Addons */
-    function buyAddon(uint256 _nftId, uint256 addonId) external {
+    modifier tokenOwner(uint256 _id) {
         require(
-            vnft.ownerOf(_nftId) == msg.sender ||
-                vnft.careTaker(_nftId, vnft.ownerOf(_nftId)) == msg.sender,
+            vnft.ownerOf(_id) == msg.sender ||
+                vnft.careTaker(_id, vnft.ownerOf(_id)) == msg.sender,
             "You must own the vNFT or be a care taker to buy addons"
         );
+        _;
+    }
 
+    modifier notPaused() {
+        require(!paused, "Contract paused!");
+        _;
+    }
+
+    /*Addons */
+    // buys initial addon distribution for muse
+    function buyAddon(uint256 _nftId, uint256 addonId)
+        public
+        tokenOwner(_nftId)
+        notPaused
+    {
         Addon storage _addon = addon[addonId];
+
+        require(
+            addons.balanceOf(address(this), addonId) <= _addon.used,
+            "Addon not available"
+        );
+
+        _addon.used = _addon.used.add(1);
 
         addonsConsumed[_nftId].push(addonId);
 
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
 
         uint256 artistCut = _addon.price.mul(artistPct).div(100);
+
         muse.transferFrom(msg.sender, _addon.artist, artistCut);
         muse.burnFrom(msg.sender, _addon.price.sub(artistCut));
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
 
+    // to use addon bought on opensea
+    function useAddon(uint256 _nftId, uint256 _addonID)
+        public
+        tokenOwner(_nftId)
+        notPaused
+    {
+        require(
+            addons.balanceOf(msg.sender, _addonID) >= 1,
+            "!own the addon to use it"
+        );
+
+        Addon storage _addon = addon[_addonID];
+        _addon.used = _addon.used.add(1);
+
+        addonsConsumed[_nftId].push(_addonID);
+
+        rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
+
+        addons.safeTransferFrom(
+            msg.sender,
+            address(this),
+            _addonID,
+            1, //the amount of tokens to transfer which always be 1
+            "0x0"
+        );
+    }
+
+    //unwrap addon from game to get erc1155 for trading.
+    // function removeAddon(uint256 _addonID, uint256 _nftId)
+    //     external
+    //     tokenOwner
+    // {}
+
+    function useMultiple(uint256[] calldata nftIds, uint256[] calldata addonIds)
+        external
+    {
+        require(addonIds.length == nftIds.length, "Should match 1 to 1");
+        for (uint256 i = 0; i < addonIds.length; i++) {
+            useAddon(nftIds[i], addonIds[i]);
+        }
+    }
+
+    function buyMultiple(uint256[] calldata nftIds, uint256[] calldata addonIds)
+        external
+    {
+        require(addonIds.length == nftIds.length, "Should match 1 to 1");
+        for (uint256 i = 0; i < addonIds.length; i++) {
+            useAddon(nftIds[i], addonIds[i]);
+        }
+    }
+
     /* end Addons */
 
-    // perform an action on delegate contract
-    function action(string memory _signature, uint256 nftId) public {
+    // perform an action on delegated contract (battles, killing, etc)
+    function action(string memory _signature, uint256 nftId) public notPaused {
         (bool success, ) = delegateContract.delegatecall(
             abi.encodeWithSignature(_signature, nftId)
         );
@@ -86,6 +256,14 @@ contract VNFTx is Ownable {
     }
 
     /* ADMIN FUNCTIONS */
+
+    // withdraw dead pets accessories
+    function withdraw(
+        uint256 _id,
+        address _to,
+    ) external onlyOwner {
+        addons.safeTransferFrom(address(this), _to, _id, 1, "");
+    }
 
     function changeDelegate(address _newDelegate) external onlyOwner {
         require(
@@ -104,12 +282,22 @@ contract VNFTx is Ownable {
         uint256 price,
         uint256 _rarity,
         string calldata _artistName,
-        address _artist
+        address _artist,
+        uint256 _quantity
     ) external onlyOwner {
         _addonId.increment();
         uint256 newAddonId = _addonId.current();
 
-        addon[newAddonId] = Addon(name, price, _rarity, _artistName, _artist);
+        addon[newAddonId] = Addon(
+            name,
+            price,
+            _rarity,
+            _artistName,
+            _artist,
+            _quantity,
+            0
+        );
+        addons.mint(address(this), newAddonId, _quantity, "");
 
         emit CreateAddon(newAddonId, name, _rarity);
     }
@@ -120,7 +308,9 @@ contract VNFTx is Ownable {
         uint256 price,
         uint256 _rarity,
         string calldata _artistName,
-        address _artist
+        address _artist,
+        uint256 _quantity,
+        uint256 _used
     ) external onlyOwner {
         Addon storage _addon = addon[_id];
 
@@ -129,10 +319,16 @@ contract VNFTx is Ownable {
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
         _addon.artist = _artist;
+        _addon.quantity = _quantity;
+        _addon.used = _used;
         emit EditAddon(_id, name, price);
     }
 
     function setArtistPct(uint256 _newPct) external onlyOwner {
         artistPct = _newPct;
+    }
+
+    function pause(bool _paused) public onlyOwner {
+        paused = _paused;
     }
 }

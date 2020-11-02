@@ -2,13 +2,16 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
 
-contract V1 is Ownable {
+contract V1 is Ownable, ERC1155Holder {
     using SafeMath for uint256;
 
+    bool paused = false;
     //for upgradability
     address public delegateContract;
     address[] public previousDelegates;
@@ -16,6 +19,7 @@ contract V1 is Ownable {
 
     IVNFT public vnft;
     IMuseToken public muse;
+    IERC1155 public addons;
 
     uint256 public artistPct = 5;
 
@@ -25,6 +29,8 @@ contract V1 is Ownable {
         uint256 rarity;
         string artistName;
         address artist;
+        uint256 quantity;
+        uint256 used;
     }
 
     mapping(uint256 => Addon) public addon;
@@ -32,6 +38,8 @@ contract V1 is Ownable {
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
+
+    uint256 public maxIds = 10;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
