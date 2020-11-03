@@ -3,7 +3,7 @@
 ## quickstart
 
 ```bash 
-git clone https://github.com/verynifty/vnft-contracts.fit VNFT
+git clone https://github.com/verynifty/vnft-contracts.git VNFT
 
 cd VNFT
 ```
