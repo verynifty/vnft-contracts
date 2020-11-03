@@ -50,7 +50,7 @@ async function main() {
 
   // mint to other user to test erc1155 works
 
-  await MuseToken.mint("0x821503f2d6990eb6E71fde0CeFf503cE5415b98c", 100000);
+  await MuseToken.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", 1000);
 
   // grant miner role to Master Chef
   await MuseToken.grantRole(
@@ -72,7 +72,7 @@ async function main() {
 
   // deploy VNFTx.sol
 
-  const Addons = await deploy("Addons", [
+  const NiftyAddons = await deploy("NiftyAddons", [
     "https://gallery.verynifty.io/api/addon/",
   ]);
 
@@ -83,14 +83,56 @@ async function main() {
     VNFT.address,
     MuseToken.address,
     V1.address,
-    Addons.address,
+    NiftyAddons.address,
   ]);
 
+  await MuseToken.approve(VNFTx.address, "1000000000000000000000");
+
   console.log("🚀 Deployed VNFTx \n");
+
+  await NiftyAddons.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    VNFTx.address
+  );
+  console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n");
+
+  const createAddonShield = await VNFTx.createAddon(
+    "shield",
+    10,
+    150,
+    "RektMeRev",
+    VNFTx.address,
+    100
+  );
+
+  const createAddonHat = await VNFTx.createAddon(
+    "hat",
+    10,
+    150,
+    "RektMeRev",
+    VNFTx.address,
+    100
+  );
+
+  console.log("🚀 Created addon shield and hat \n");
 
   // run action function to test delegate contract
   const challenge = await VNFTx.action("challenge1(uint256)", 0);
   console.log("action on delegate contract", challenge);
+
+  await VNFTx.buyAddon(0, 1);
+  await VNFTx.buyAddon(0, 2);
+
+  // return balance of
+  const listSize = await VNFTx.addonsBalanceOf(0);
+  const tokens = [];
+
+  for (let index = 0; index < listSize; index++) {
+    let id = await VNFTx.addonsOfNftByIndex(0, index);
+    tokens.push(id.toString());
+  }
+
+  console.log("Addons Pet #0 owns", tokens);
 }
 
 async function deploy(name, _args) {

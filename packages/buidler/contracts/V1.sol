@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
@@ -33,13 +34,14 @@ contract V1 is Ownable, ERC1155Holder {
         uint256 used;
     }
 
+    using EnumerableSet for EnumerableSet.UintSet;
+
     mapping(uint256 => Addon) public addon;
-    mapping(uint256 => uint256[]) public addonsConsumed;
+
+    mapping(uint256 => EnumerableSet.UintSet) private addonsConsumed;
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
-
-    uint256 public maxIds = 10;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;

@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
 // import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -15,6 +17,7 @@ pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/introspection/IERC165.sol";
 
+// Extending IERC1155 with mint and burn
 interface IERC1155 is IERC165 {
     event TransferSingle(
         address indexed operator,
@@ -125,8 +128,11 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 used;
     }
 
+    using EnumerableSet for EnumerableSet.UintSet;
+
     mapping(uint256 => Addon) public addon;
-    mapping(uint256 => uint256[]) public addonsConsumed;
+
+    mapping(uint256 => EnumerableSet.UintSet) private addonsConsumed;
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
@@ -166,6 +172,20 @@ contract VNFTx is Ownable, ERC1155Holder {
         _;
     }
 
+    // get how many addons a pet is using
+    function addonsBalanceOf(uint256 _nftId) public view returns (uint256) {
+        return addonsConsumed[_nftId].length();
+    }
+
+    // get a specific addon
+    function addonsOfNftByIndex(uint256 _nftId, uint256 _index)
+        public
+        view
+        returns (uint256)
+    {
+        return addonsConsumed[_nftId].at(_index);
+    }
+
     /*Addons */
     // buys initial addon distribution for muse
     function buyAddon(uint256 _nftId, uint256 addonId)
@@ -176,13 +196,13 @@ contract VNFTx is Ownable, ERC1155Holder {
         Addon storage _addon = addon[addonId];
 
         require(
-            addons.balanceOf(address(this), addonId) <= _addon.used,
+            _addon.used <= addons.balanceOf(address(this), addonId),
             "Addon not available"
         );
 
         _addon.used = _addon.used.add(1);
 
-        addonsConsumed[_nftId].push(addonId);
+        addonsConsumed[_nftId].add(addonId);
 
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
 
@@ -193,7 +213,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
 
-    // to use addon bought on opensea
+    // to use addon bought on opensea on your specific pet
     function useAddon(uint256 _nftId, uint256 _addonID)
         public
         tokenOwner(_nftId)
@@ -207,7 +227,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         Addon storage _addon = addon[_addonID];
         _addon.used = _addon.used.add(1);
 
-        addonsConsumed[_nftId].push(_addonID);
+        addonsConsumed[_nftId].add(_addonID);
 
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
 
@@ -220,11 +240,49 @@ contract VNFTx is Ownable, ERC1155Holder {
         );
     }
 
-    //unwrap addon from game to get erc1155 for trading.
-    // function removeAddon(uint256 _addonID, uint256 _nftId)
-    //     external
-    //     tokenOwner
-    // {}
+    // @TODO function for owner to transfer addon from owned pet to owned pet without unwrapping.
+    function transferAddon(
+        uint256 _nftId,
+        uint256 _addonID,
+        uint256 _toId
+    ) external tokenOwner(_nftId) {
+        Addon storage _addon = addon[_addonID];
+
+        // remove addon and rarity points from pet
+        addonsConsumed[_nftId].remove(_addonID);
+        rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
+
+        // add addon and rarity points to new pet
+        addonsConsumed[_toId].add(_addonID);
+        rarity[_toId] = rarity[_toId].add(_addon.rarity);
+    }
+
+    // unwrap addon from game to get erc1155 for trading. (losed rarity points)
+    function removeAddon(uint256 _nftId, uint256 _addonID)
+        public
+        tokenOwner(_nftId)
+    {
+        Addon storage _addon = addon[_addonID];
+        rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
+
+        addonsConsumed[_nftId].remove(_addonID);
+        addons.safeTransferFrom(
+            address(this),
+            msg.sender,
+            _addonID,
+            1, //the amount of tokens to transfer which always be 1
+            "0x0"
+        );
+    }
+
+    function removeMultiple(
+        uint256[] calldata nftIds,
+        uint256[] calldata addonIds
+    ) external {
+        for (uint256 i = 0; i < addonIds.length; i++) {
+            removeAddon(nftIds[i], addonIds[i]);
+        }
+    }
 
     function useMultiple(uint256[] calldata nftIds, uint256[] calldata addonIds)
         external
@@ -258,10 +316,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     /* ADMIN FUNCTIONS */
 
     // withdraw dead pets accessories
-    function withdraw(
-        uint256 _id,
-        address _to,
-    ) external onlyOwner {
+    function withdraw(uint256 _id, address _to) external onlyOwner {
         addons.safeTransferFrom(address(this), _to, _id, 1, "");
     }
 

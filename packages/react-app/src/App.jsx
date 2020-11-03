@@ -129,6 +129,13 @@ function App() {
         blockExplorer={blockExplorer}
       />
       <Contract
+        name="NiftyAddons"
+        signer={userProvider.getSigner()}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+      />
+      <Contract
         name="V1"
         signer={userProvider.getSigner()}
         provider={localProvider}
