@@ -92,14 +92,14 @@ interface IERC721 is IERC165 {
 }
 
 // Stake to get vnfts
-contract StakeForVnfts is Roles {
+contract StakeForVnfts2 is Roles {
     using SafeMath for uint256;
 
     IMuseToken public museToken;
     IERC721 public vNFT;
 
     // min $muse amount required to stake
-    uint256 public minStake = 5 * 1 ether;
+    uint256 public minStake = 50 * 1 ether;
 
     // amount of points needed to redeem a vnft, roughly 1 point is given each day;
     uint256 public vnftPrice = 400 * 1 ether;
@@ -115,7 +115,7 @@ contract StakeForVnfts is Roles {
 
     event Staked(address who, uint256 amount);
     event Withdrawal(address who, uint256 amount);
-    event VnftMinted(address to);
+    event VnftMinted(address to, uint256 pointPrice, uint256 musePrice);
 
     event StakeReqChanged(uint256 newAmount);
     event PriceOfvnftChanged(uint256 newAmount);
@@ -160,7 +160,7 @@ contract StakeForVnfts is Roles {
         _;
     }
 
-    //calculate how many points earned so far, this needs to give roughly 1 point a day per 5 tokens staked?.
+    //calculate how many points earned so far, this needs to give roughly 1 point a day per 5 tokens staked
     function earned(address account) public view returns (uint256) {
         uint256 blockTime = block.timestamp;
         return
@@ -220,6 +220,6 @@ contract StakeForVnfts is Roles {
         balance[msg.sender] = balance[msg.sender].sub(musePrice);
         museToken.burn(musePrice);
         vNFT.mint(msg.sender);
-        emit VnftMinted(msg.sender);
+        emit VnftMinted(msg.sender, vnftPrice, musePrice);
     }
 }
