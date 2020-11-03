@@ -103,6 +103,9 @@ interface IERC1155 is IERC165 {
     ) external;
 }
 
+// @TODO add "health" system basde on a level time progression algorithm.
+// @TODO continue developing V1.sol with multi feeding, multi mining and battlers, challenges, etc.
+
 contract VNFTx is Ownable, ERC1155Holder {
     using SafeMath for uint256;
 
