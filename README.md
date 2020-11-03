@@ -44,6 +44,25 @@ yarn compile && yarn deploy
 
 📱 Open http://localhost:3000 to see the app
 
+## Testing the smart contracts
+
+A set of scripts are available in  `packages/buidler/scripts`.
+
+>Run them:
+```bash
+
+cd packages/buidler
+npx builder run scripts/[NAME OF SCRIPT]].js
+
+```
+
+## Verifying contracts on Etherscan
+
+```bash
+
+npx buidler verify --network mainnet ADDRESS_OF_CONTRACT_TO_VERIFY PARAM_1 PARAM_2...
+
+```
 
 ## 🏗 Thanks scaffold-eth!
 
