@@ -55,7 +55,7 @@ async function main() {
     await ethers.provider.send("evm_mine"); // mine the next block
     points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Points after two day", points.div("1000000000000000000").toString())
-    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24* 8]); // add 1day
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 8]); // add 1day
     await ethers.provider.send("evm_mine"); // mine the next block
     points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Points after 10 days", points.div("1000000000000000000").toString())
@@ -70,11 +70,31 @@ async function main() {
     balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Balance after minting", balance.div("1000000000000000000").toString())
 
-    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24* 10]); // add 1day
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 10]); // add 1day
     await ethers.provider.send("evm_mine"); // mine the next block
 
     points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after minting", balance.div("1000000000000000000").toString())
+
+    await Stake2.withdraw("300000000000000000000");
+    console.log('withdraw 300')
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
+
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 10]); // add 1day
+    await ethers.provider.send("evm_mine"); // mine the next block
+
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after minting", balance.div("1000000000000000000").toString())
+
+    balance = await Stake2.redeem();
+    console.log("after minitng 2")
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 days", points.div("1000000000000000000").toString())
     balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Balance after minting", balance.div("1000000000000000000").toString())
 

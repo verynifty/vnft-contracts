@@ -188,11 +188,11 @@ contract StakeForVnfts2 is Roles {
     }
 
     // withdraw part of your stake
-    function withdraw(uint256 amount) internal updateReward(msg.sender) {
+    function withdraw(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Amount can't be 0");
         require(totalStaked >= amount);
-        points[msg.sender] = 0;
-        lastUpdateTime[msg.sender] = 0;
+        points[msg.sender] = earned(msg.sender);
+        lastUpdateTime[msg.sender] = block.timestamp;
         balance[msg.sender] = balance[msg.sender].sub(amount);
         totalStaked = totalStaked.sub(amount);
         // transfer erc20 back from the contract to the user
