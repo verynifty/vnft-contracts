@@ -5,7 +5,7 @@
 ```bash 
 git clone https://github.com/verynifty/vnft-contracts.fit VNFT
 
-cd your-next-dapp
+cd VNFT
 ```
 
 ```bash
@@ -38,7 +38,7 @@ yarn compile && yarn deploy
 
 ```
 
-🔏 Edit your smart contract `YourContract.sol` in `packages/buidler/contracts`
+🔏 Edit smart contracts like `VNFT.sol` in `packages/buidler/contracts`
 
 📝 Edit your frontend `App.jsx` in `packages/react-app/src`
 
