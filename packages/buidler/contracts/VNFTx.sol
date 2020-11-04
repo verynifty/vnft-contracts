@@ -124,6 +124,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     struct Addon {
         string _type;
         uint256 price;
+        uint256 hp;
         uint256 rarity;
         string artistName;
         address artistAddr;
@@ -189,6 +190,11 @@ contract VNFTx is Ownable, ERC1155Holder {
         return addonsConsumed[_nftId].at(_index);
     }
 
+    function getHp(uint256 _nftId) public view returns (uint256) {
+        // add hp calculation
+        return 1;
+    }
+
     /*Addons */
     // buys initial addon distribution for muse
     function buyAddon(uint256 _nftId, uint256 addonId)
@@ -198,6 +204,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     {
         Addon storage _addon = addon[addonId];
 
+        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this tiem");
         require(
             _addon.used <= addons.balanceOf(address(this), addonId),
             "Addon not available"
@@ -228,6 +235,9 @@ contract VNFTx is Ownable, ERC1155Holder {
         );
 
         Addon storage _addon = addon[_addonID];
+
+        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this tiem");
+
         _addon.used = _addon.used.add(1);
 
         addonsConsumed[_nftId].add(_addonID);
@@ -250,6 +260,8 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _toId
     ) external tokenOwner(_nftId) {
         Addon storage _addon = addon[_addonID];
+
+        require(getHp(_toId) >= _addon.hp, "Receiving NFT with no enough HP");
 
         // remove addon and rarity points from pet
         addonsConsumed[_nftId].remove(_addonID);
@@ -338,6 +350,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     function createAddon(
         string calldata _type,
         uint256 price,
+        uint256 _hp,
         uint256 _rarity,
         string calldata _artistName,
         address _artist,
@@ -349,6 +362,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         addon[newAddonId] = Addon(
             _type,
             price,
+            _hp,
             _rarity,
             _artistName,
             _artist,
@@ -364,6 +378,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _id,
         string calldata _type,
         uint256 price,
+        uint256 _hp,
         uint256 _rarity,
         string calldata _artistName,
         address _artist,
@@ -374,6 +389,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         _addon._type = _type;
         _addon.price = price * 10**18;
+        _addon.htp = _hp;
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
         _addon.artistAddr = _artist;
