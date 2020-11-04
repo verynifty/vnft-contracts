@@ -78,7 +78,7 @@ async function main() {
 
   console.log("🚀 Deployed Addons \n");
 
-  const V1 = await deploy("V1", []);
+  const V1 = await deploy("V1", [VNFT.address, MuseToken.address]);
   const VNFTx = await deploy("VNFTx", [
     VNFT.address,
     MuseToken.address,
@@ -122,6 +122,13 @@ async function main() {
 
   await VNFTx.buyAddon(0, 1);
   await VNFTx.buyAddon(0, 2);
+
+  // test nifty tools
+  await VNFT.addCareTaker(0, V1.address);
+
+  await V1.claimMultiple([0]);
+
+  console.log("Claimed Multiple workED!");
 
   // return balance of
   const listSize = await VNFTx.addonsBalanceOf(0);

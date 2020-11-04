@@ -122,11 +122,11 @@ contract VNFTx is Ownable, ERC1155Holder {
     uint256 public artistPct = 5;
 
     struct Addon {
-        string name;
+        string _type;
         uint256 price;
         uint256 rarity;
         string artistName;
-        address artist;
+        address artistAddr;
         uint256 quantity;
         uint256 used;
     }
@@ -145,8 +145,8 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     event DelegateChanged(address oldAddress, address newAddress);
     event BuyAddon(uint256 nftId, uint256 addon, address player);
-    event CreateAddon(uint256 addonId, string name, uint256 rarity);
-    event EditAddon(uint256 addonId, string name, uint256 price);
+    event CreateAddon(uint256 addonId, string _type, uint256 rarity);
+    event EditAddon(uint256 addonId, string _type, uint256 price);
 
     constructor(
         IVNFT _vnft,
@@ -211,7 +211,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         uint256 artistCut = _addon.price.mul(artistPct).div(100);
 
-        muse.transferFrom(msg.sender, _addon.artist, artistCut);
+        muse.transferFrom(msg.sender, _addon.artistAddr, artistCut);
         muse.burnFrom(msg.sender, _addon.price.sub(artistCut));
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
@@ -336,7 +336,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     }
 
     function createAddon(
-        string calldata name,
+        string calldata _type,
         uint256 price,
         uint256 _rarity,
         string calldata _artistName,
@@ -347,7 +347,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 newAddonId = _addonId.current();
 
         addon[newAddonId] = Addon(
-            name,
+            _type,
             price,
             _rarity,
             _artistName,
@@ -357,12 +357,12 @@ contract VNFTx is Ownable, ERC1155Holder {
         );
         addons.mint(address(this), newAddonId, _quantity, "");
 
-        emit CreateAddon(newAddonId, name, _rarity);
+        emit CreateAddon(newAddonId, _type, _rarity);
     }
 
     function editAddon(
         uint256 _id,
-        string calldata name,
+        string calldata _type,
         uint256 price,
         uint256 _rarity,
         string calldata _artistName,
@@ -372,14 +372,14 @@ contract VNFTx is Ownable, ERC1155Holder {
     ) external onlyOwner {
         Addon storage _addon = addon[_id];
 
-        _addon.name = name;
+        _addon._type = _type;
         _addon.price = price * 10**18;
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
-        _addon.artist = _artist;
+        _addon.artistAddr = _artist;
         _addon.quantity = _quantity;
         _addon.used = _used;
-        emit EditAddon(_id, name, price);
+        emit EditAddon(_id, _type, price);
     }
 
     function setArtistPct(uint256 _newPct) external onlyOwner {
