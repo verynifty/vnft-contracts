@@ -1,7 +1,8 @@
 const fs = require("fs");
 const chalk = require("chalk");
 const { config, ethers } = require("@nomiclabs/buidler");
-
+MUSE_TOKEN = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81"
+VNFT_CONTRACT = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94"
 async function main() {
     console.log("📡 Deploy \n");
     // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
@@ -9,14 +10,24 @@ async function main() {
     // OR
     // custom deploy (to use deployed addresses)
 
-    const MuseToken = await deploy("MuseToken");
-    const VNFT = await deploy("VNFT", [MuseToken.address]);
+  //  const MuseToken = await deploy("MuseToken");
+   // const VNFT = await deploy("VNFT", [MuseToken.address]);
 
 
     const Stake2 = await deploy("StakeForVnfts2", [
+        VNFT_CONTRACT,
+        MUSE_TOKEN,
+    ]);
+return
+    const Stake = await deploy("StakeForVnfts", [
         VNFT.address,
         MuseToken.address,
     ]);
+
+    await VNFT.grantRole(
+        "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+        Stake.address
+    );
 
     await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 8]); // add 1day
     await ethers.provider.send("evm_mine"); // mine the next block
@@ -38,6 +49,7 @@ async function main() {
         "0xc783df8a850f42e7f7e57013759c285caa701eb6",
         "100000000000000000000000"
     );
+    return;
 
     await MuseToken.approve(Stake2.address, "10000000000000000000000");
 
@@ -78,13 +90,42 @@ async function main() {
     balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Balance after minting", balance.div("1000000000000000000").toString())
 
-    await Stake2.withdraw("300000000000000000000");
-    console.log('withdraw 300')
+    await Stake2.withdraw("350000000000000000000");
+    console.log('withdraw 350')
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
     balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
 
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 100]); // add 1day
+    await ethers.provider.send("evm_mine"); // mine the next block
+
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
+
+    await Stake2.stake(
+        "400000000000000000000"
+    );
+
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
+
+
     await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 10]); // add 1day
     await ethers.provider.send("evm_mine"); // mine the next block
+
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
+    points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Points after 10 more days", points.div("1000000000000000000").toString())
+    balance = await Stake2.balance("0xc783df8a850f42e7f7e57013759c285caa701eb6");
+    console.log("Balance after withdraw", balance.div("1000000000000000000").toString())
 
     points = await Stake2.earned("0xc783df8a850f42e7f7e57013759c285caa701eb6");
     console.log("Points after 10 more days", points.div("1000000000000000000").toString())
