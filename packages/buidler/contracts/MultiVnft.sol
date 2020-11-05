@@ -32,7 +32,7 @@ contract MultiVnft is Ownable {
         @dev contract should be whitelisted as caretaker beforehand
      */
     function claimMultiple(uint256[] calldata ids) external notPaused {
-        require(ids.length <= maxIds, "LENGTH");
+        require(ids.length <= maxIds, "Too much vNFT passed");
 
         for (uint256 i = 0; i < ids.length; i++) {
             require(vnft.ownerOf(ids[i]) == msg.sender);
@@ -40,6 +40,16 @@ contract MultiVnft is Ownable {
         }
         // Send muse to user
         require(muse.transfer(msg.sender, muse.balanceOf(address(this))));
+    }
+
+     function _checkReward(uint256[] memory _nftIds)
+        public
+        view
+        returns (uint256 totalAmt)
+    {
+        for (uint256 i = 0; i < _nftIds.length; i++) {
+            totalAmt = totalAmt.add(vnft.getRewards(_nftIds[i]));
+        }
     }
 
     function _checkAmount(uint256[] memory _itemIds)
@@ -61,7 +71,7 @@ contract MultiVnft is Ownable {
         external
         notPaused
     {
-        require(ids.length <= maxIds, "Too many ids");
+        require(ids.length <= maxIds, "Too much vNFT passed");
         uint256 museCost = _checkAmount(itemIds);
         require(
             muse.transferFrom(msg.sender, address(this), museCost),

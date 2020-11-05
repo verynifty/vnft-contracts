@@ -22,6 +22,8 @@ interface IVNFT {
 
     function itemPrice(uint256 itemId) external view returns (uint256 _amount);
 
+    function getRewards(uint256 tokenId) external view returns (uint256);
+
     function timeUntilStarving(uint256 _tokenId)
         external
         view
