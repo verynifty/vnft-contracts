@@ -104,7 +104,6 @@ interface IERC1155 is IERC165 {
 }
 
 // @TODO add "health" system basde on a level time progression algorithm.
-// @TODO continue developing V1.sol with multi feeding, multi mining and battlers, challenges, etc.
 
 contract VNFTx is Ownable, ERC1155Holder {
     using SafeMath for uint256;
@@ -190,9 +189,9 @@ contract VNFTx is Ownable, ERC1155Holder {
         return addonsConsumed[_nftId].at(_index);
     }
 
-    function getHp(uint256 _nftId) public view returns (uint256) {
+    function getHp(uint256 _nftId) public pure returns (uint256) {
         // add hp calculation
-        return 1;
+        return _nftId;
     }
 
     /*Addons */
@@ -204,7 +203,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     {
         Addon storage _addon = addon[addonId];
 
-        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this tiem");
+        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this addon");
         require(
             _addon.used <= addons.balanceOf(address(this), addonId),
             "Addon not available"
@@ -236,7 +235,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         Addon storage _addon = addon[_addonID];
 
-        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this tiem");
+        require(getHp(_nftId) >= _addon.hp, "Raise your HP to use this addon");
 
         _addon.used = _addon.used.add(1);
 
@@ -253,7 +252,6 @@ contract VNFTx is Ownable, ERC1155Holder {
         );
     }
 
-    // @TODO function for owner to transfer addon from owned pet to owned pet without unwrapping.
     function transferAddon(
         uint256 _nftId,
         uint256 _addonID,
@@ -261,7 +259,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     ) external tokenOwner(_nftId) {
         Addon storage _addon = addon[_addonID];
 
-        require(getHp(_toId) >= _addon.hp, "Receiving NFT with no enough HP");
+        require(getHp(_toId) >= _addon.hp, "Receiving vNFT with no enough HP");
 
         // remove addon and rarity points from pet
         addonsConsumed[_nftId].remove(_addonID);
@@ -272,7 +270,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         rarity[_toId] = rarity[_toId].add(_addon.rarity);
     }
 
-    // unwrap addon from game to get erc1155 for trading. (losed rarity points)
+    // unwrap addon from game to get erc1155 for trading. (loses rarity points)
     function removeAddon(uint256 _nftId, uint256 _addonID)
         public
         tokenOwner(_nftId)
@@ -389,7 +387,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         _addon._type = _type;
         _addon.price = price * 10**18;
-        _addon.htp = _hp;
+        _addon.hp = _hp;
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
         _addon.artistAddr = _artist;

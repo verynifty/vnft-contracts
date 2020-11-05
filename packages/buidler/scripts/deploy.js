@@ -99,6 +99,7 @@ async function main() {
   const createAddonShield = await VNFTx.createAddon(
     "shield",
     10,
+    100,
     150,
     "RektMeRev",
     VNFTx.address,
@@ -108,6 +109,7 @@ async function main() {
   const createAddonHat = await VNFTx.createAddon(
     "hat",
     10,
+    100,
     150,
     "RektMeRev",
     VNFTx.address,
@@ -120,15 +122,16 @@ async function main() {
   const challenge = await VNFTx.action("challenge1(uint256)", 0);
   console.log("action on delegate contract", challenge);
 
-  await VNFTx.buyAddon(0, 1);
-  await VNFTx.buyAddon(0, 2);
+  // @todo that initial hp is always 0
+  // await VNFTx.buyAddon(0, 1);
+  // await VNFTx.buyAddon(0, 2);
 
-  // test nifty tools
-  await VNFT.addCareTaker(0, V1.address);
+  // deploy multiVNFT
 
-  await V1.claimMultiple([0]);
-
-  console.log("Claimed Multiple workED!");
+  const MultiVnft = await deploy("MultiVnft", [
+    VNFT.address,
+    MuseToken.address,
+  ]);
 
   // return balance of
   const listSize = await VNFTx.addonsBalanceOf(0);
@@ -140,6 +143,13 @@ async function main() {
   }
 
   console.log("Addons Pet #0 owns", tokens);
+
+  // test nifty Multi mine/feed
+  await VNFT.addCareTaker(0, MultiVnft.address);
+
+  await MultiVnft.claimMultiple([0]);
+
+  console.log("Claimed Multiple workED!");
 }
 
 async function deploy(name, _args) {
