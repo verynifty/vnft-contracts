@@ -56,9 +56,13 @@ interface IVNFT {
 
     function vnftScore(uint256 _tokenId) external view returns (uint256 _score);
 
-    function vnftScore(uint256 _tokenId, address) //TODO What is this one?
+    function vnftScore(
+        uint256 _tokenId,
+        address //TODO What is this one?
+    ) external view returns (uint256 _score);
+
+    function timeVnftBorn(uint256 _tokenId)
         external
         view
-        returns (uint256 _score);
-        
+        returns (uint256 _born);
 }
