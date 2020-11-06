@@ -8,7 +8,9 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
+import "./interfaces/IVNFTx.sol";
 
+// @TODO create interface for VNFTx
 contract V1 is Ownable, ERC1155Holder {
     using SafeMath for uint256;
 
@@ -43,15 +45,21 @@ contract V1 is Ownable, ERC1155Holder {
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
+    mapping(uint256 => uint256) public challengesUsed;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
 
-    // uint256 public MAX_INT = 2**256 - 1;
+    IVNFTx public vnftx;
 
-    constructor(IVNFT _vnft, IMuseToken _muse) public {
+    constructor(
+        IVNFT _vnft,
+        IMuseToken _muse,
+        IVNFTx _vnftx
+    ) public {
         vnft = _vnft;
         muse = _muse;
+        vnftx = _vnftx;
     }
 
     modifier notPaused() {
@@ -59,7 +67,41 @@ contract V1 is Ownable, ERC1155Holder {
         _;
     }
 
+    modifier tokenOwner(uint256 _id) {
+        require(
+            vnft.ownerOf(_id) == msg.sender ||
+                vnft.careTaker(_id, vnft.ownerOf(_id)) == msg.sender,
+            "You must own the vNFT or be a care taker to buy addons"
+        );
+        _;
+    }
+
+    // func to test store update with delegatecall
     function challenge1(uint256 _nftId) public {
         rarity[_nftId] = rarity[_nftId] + 888;
+    }
+
+    // simple battle for muse
+    function battle(uint256 _nftId, uint256 _opponent)
+        public
+        tokenOwner(_nftId)
+    {
+        // require x challenges and x hp or xx rarity for battles
+        require(
+            vnftx.getChallenges(_nftId) >= 1 && rarity[_nftId] >= 100,
+            "can't challenge"
+        );
+
+        // require opponent to be of certain threshold
+        require(vnftx.getHp(_opponent) <= 100, "You can't attack this pet");
+
+        // challenge used.
+        challengesUsed[_nftId] = challengesUsed[_nftId].sub(1);
+
+        // decrease something, maybe rarity or something that will lower the opponents hp;
+        rarity[_opponent] = rarity[_opponent].sub(100);
+
+        // send muse to attacker based on condition
+        muse.mint(msg.sender, 1 ether);
     }
 }

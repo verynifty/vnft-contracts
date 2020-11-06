@@ -139,6 +139,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
+    mapping(uint256 => uint256) public challengesUsed;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -194,8 +195,12 @@ contract VNFTx is Ownable, ERC1155Holder {
         return _nftId;
     }
 
-    /*Addons */
-    // buys initial addon distribution for muse
+    function getChallenges(uint256 _nftId) public view returns (uint256) {
+        // add calculation of challenges that should be derived by score/level/hp - challenge used
+        uint256 challenges = 1000;
+        return challenges.sub(challengesUsed[_nftId]);
+    }
+
     function buyAddon(uint256 _nftId, uint256 addonId)
         public
         tokenOwner(_nftId)
@@ -222,7 +227,6 @@ contract VNFTx is Ownable, ERC1155Holder {
         emit BuyAddon(_nftId, addonId, msg.sender);
     }
 
-    // to use addon bought on opensea on your specific pet
     function useAddon(uint256 _nftId, uint256 _addonID)
         public
         tokenOwner(_nftId)
@@ -243,13 +247,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
 
-        addons.safeTransferFrom(
-            msg.sender,
-            address(this),
-            _addonID,
-            1, //the amount of tokens to transfer which always be 1
-            "0x0"
-        );
+        addons.safeTransferFrom(msg.sender, address(this), _addonID, 1, "0x0");
     }
 
     function transferAddon(
@@ -261,16 +259,13 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         require(getHp(_toId) >= _addon.hp, "Receiving vNFT with no enough HP");
 
-        // remove addon and rarity points from pet
         addonsConsumed[_nftId].remove(_addonID);
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
 
-        // add addon and rarity points to new pet
         addonsConsumed[_toId].add(_addonID);
         rarity[_toId] = rarity[_toId].add(_addon.rarity);
     }
 
-    // unwrap addon from game to get erc1155 for trading. (loses rarity points)
     function removeAddon(uint256 _nftId, uint256 _addonID)
         public
         tokenOwner(_nftId)
@@ -279,13 +274,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
 
         addonsConsumed[_nftId].remove(_addonID);
-        addons.safeTransferFrom(
-            address(this),
-            msg.sender,
-            _addonID,
-            1, //the amount of tokens to transfer which always be 1
-            "0x0"
-        );
+        addons.safeTransferFrom(address(this), msg.sender, _addonID, 1, "0x0");
     }
 
     function removeMultiple(
@@ -315,9 +304,6 @@ contract VNFTx is Ownable, ERC1155Holder {
         }
     }
 
-    /* end Addons */
-
-    // perform an action on delegated contract (battles, killing, etc)
     function action(string memory _signature, uint256 nftId) public notPaused {
         (bool success, ) = delegateContract.delegatecall(
             abi.encodeWithSignature(_signature, nftId)
@@ -326,9 +312,6 @@ contract VNFTx is Ownable, ERC1155Holder {
         require(success, "Action error");
     }
 
-    /* ADMIN FUNCTIONS */
-
-    // withdraw dead pets accessories
     function withdraw(uint256 _id, address _to) external onlyOwner {
         addons.safeTransferFrom(address(this), _to, _id, 1, "");
     }
