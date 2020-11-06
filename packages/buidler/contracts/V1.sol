@@ -29,7 +29,7 @@ contract V1 is Ownable, ERC1155Holder {
     struct Addon {
         string _type;
         uint256 price;
-        uint256 hp;
+        uint256 requiredhp;
         uint256 rarity;
         string artistName;
         address artistAddr;

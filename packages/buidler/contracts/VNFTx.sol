@@ -123,7 +123,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     struct Addon {
         string _type;
         uint256 price;
-        uint256 hp;
+        uint256 requiredhp;
         uint256 rarity;
         string artistName;
         address artistAddr;
@@ -190,9 +190,25 @@ contract VNFTx is Ownable, ERC1155Holder {
         return addonsConsumed[_nftId].at(_index);
     }
 
-    function getHp(uint256 _nftId) public pure returns (uint256) {
-        // add hp calculation
-        return _nftId;
+    function getHp(uint256 _nftId) public view returns (uint256) {
+        if (!vnft.isVnftAlive(_nftId)) { //vnft with expired TOD have no health
+            return 0;
+        }
+        // A vnft need to get at least 100 score every two days to be healthy
+        uint256 timeBorn = now - 4 days; // TODO we might need to include all vnft.sol to access timeborn of a vnft cause interface can't?
+        uint256 currentScore = vnft.vnftScore(_nftId);
+
+        uint256 daysLived = (timeBorn - now) / 1 days;
+        uint256 expectedMinScore = daysLived * currentScore;
+
+        uint256 calculatedHP = 0;
+        if (currentScore < expectedMinScore) // This is unealthy
+        {
+            calculatedHP = 0;
+        } else { // This is healthy case
+            calculatedHP = 100; //Should HP be capped to a max value or could go to moon?
+        }
+        return calculatedHP;
     }
 
     function getChallenges(uint256 _nftId) public view returns (uint256) {
@@ -208,7 +224,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     {
         Addon storage _addon = addon[addonId];
 
-        require(getHp(_nftId) >= _addon.hp, "Raise your HP to buy this addon");
+        require(getHp(_nftId) >= _addon.requiredhp, "Raise your HP to buy this addon");
         require(
             _addon.used <= addons.balanceOf(address(this), addonId),
             "Addon not available"
@@ -239,7 +255,7 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         Addon storage _addon = addon[_addonID];
 
-        require(getHp(_nftId) >= _addon.hp, "Raise your HP to use this addon");
+        require(getHp(_nftId) >= _addon.requiredhp, "Raise your HP to use this addon");
 
         _addon.used = _addon.used.add(1);
 
@@ -259,7 +275,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         require(_addonID != 1, "this addon is instransferible");
         Addon storage _addon = addon[_addonID];
 
-        require(getHp(_toId) >= _addon.hp, "Receiving vNFT with no enough HP");
+        require(getHp(_toId) >= _addon.requiredhp, "Receiving vNFT with no enough HP");
 
         addonsConsumed[_nftId].remove(_addonID);
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
@@ -357,11 +373,22 @@ contract VNFTx is Ownable, ERC1155Holder {
         emit CreateAddon(newAddonId, _type, _rarity);
     }
 
+    function getVnftInfo(uint256 _nftId) public view
+        returns (
+            uint256 _vNFT,
+            uint256 _rarity,
+            uint256 _hp
+        ) {
+        _vNFT = _nftId;
+        _rarity = rarity[_nftId];
+        _hp = getHp(_nftId);
+    }
+
     function editAddon(
         uint256 _id,
         string calldata _type,
         uint256 price,
-        uint256 _hp,
+        uint256 _requiredhp,
         uint256 _rarity,
         string calldata _artistName,
         address _artist,
@@ -369,10 +396,9 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _used
     ) external onlyOwner {
         Addon storage _addon = addon[_id];
-
         _addon._type = _type;
         _addon.price = price * 10**18;
-        _addon.hp = _hp;
+        _addon.requiredhp = _requiredhp;
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
         _addon.artistAddr = _artist;

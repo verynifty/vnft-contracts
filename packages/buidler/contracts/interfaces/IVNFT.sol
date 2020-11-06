@@ -24,6 +24,8 @@ interface IVNFT {
 
     function getRewards(uint256 tokenId) external view returns (uint256);
 
+    function isVnftAlive(uint256 _nftId) external view returns (bool);
+
     function timeUntilStarving(uint256 _tokenId)
         external
         view
@@ -34,10 +36,29 @@ interface IVNFT {
         view
         returns (uint256 _time);
 
+    function getVnftInfo(uint256 _nftId)
+        external
+        view
+        returns (
+            uint256 _vNFT,
+            bool _isAlive,
+            uint256 _score,
+            uint256 _level,
+            uint256 _expectedReward,
+            uint256 _timeUntilStarving,
+            uint256 _lastTimeMined,
+            uint256 _timeVnftBorn,
+            address _owner,
+            address _token,
+            uint256 _tokenId,
+            uint256 _fatalityReward
+        );
+
     function vnftScore(uint256 _tokenId) external view returns (uint256 _score);
 
-    function vnftScore(uint256 _tokenId, address)
+    function vnftScore(uint256 _tokenId, address) //TODO What is this one?
         external
         view
         returns (uint256 _score);
+        
 }
