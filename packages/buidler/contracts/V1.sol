@@ -104,4 +104,18 @@ contract V1 is Ownable, ERC1155Holder {
         // send muse to attacker based on condition
         muse.mint(msg.sender, 1 ether);
     }
+
+    function cash(uint256 _nftId) external {
+        //require to own the accessory and maintain x level of hp
+        require(
+            addonsConsumed[_nftId].contains(1) && vnftx.getHp(_nftId) >= 1000,
+            "You need to buy the accessory"
+        );
+
+        // do calculation based on level and muse acquired.
+
+        // calculate deserving amount and send to user;
+        uint256 amount = 100 * 10**18;
+        muse.mint(msg.sender, amount);
+    }
 }

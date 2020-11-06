@@ -255,6 +255,8 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _addonID,
         uint256 _toId
     ) external tokenOwner(_nftId) {
+        // maybe don't let transfer cash addon.
+        require(_addonID != 1, "this addon is instransferible");
         Addon storage _addon = addon[_addonID];
 
         require(getHp(_toId) >= _addon.hp, "Receiving vNFT with no enough HP");
