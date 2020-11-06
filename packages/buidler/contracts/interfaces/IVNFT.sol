@@ -26,6 +26,8 @@ interface IVNFT {
 
     function isVnftAlive(uint256 _nftId) external view returns (bool);
 
+    function level(uint256 tokenId) external view returns (uint256);
+
     function timeUntilStarving(uint256 _tokenId)
         external
         view

@@ -140,6 +140,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
     mapping(uint256 => uint256) public challengesUsed;
+    mapping(uint256 => uint256) public challengesDay;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -196,27 +197,42 @@ contract VNFTx is Ownable, ERC1155Holder {
             return 0;
         }
         // A vnft need to get at least 100 score every two days to be healthy
-        uint256 timeBorn = vnft.timeVnftBorn(_nftId) - 4 days; // TODO we might need to include all vnft.sol to access timeborn of a vnft cause interface can't?
+        uint256 timeBorn = vnft.timeVnftBorn(_nftId) - 4 days;
         uint256 currentScore = vnft.vnftScore(_nftId);
 
         uint256 daysLived = (timeBorn - now) / 1 days;
         uint256 expectedMinScore = daysLived * currentScore;
 
         uint256 calculatedHP = 0;
-        if (currentScore < expectedMinScore) // This is unealthy
+        if (currentScore < expectedMinScore) // This is unhealthy
         {
             calculatedHP = 0;
         } else {
             // This is healthy case
-            calculatedHP = 100; //Should HP be capped to a max value or could go to moon?
+            calculatedHP = currentScore.sub(expectedMinScore).add(rarity[_nftId]);
         }
         return calculatedHP;
     }
 
+    //Not tested but should be the one called when a vnft use a challenge
+    //Might need to put the rquire also to check if callable even if the safemath would throw in case of sub < 0
+    function useChallenge(uint256 _nftId, uint256 challengePrice) private {
+        if (challengesDay[_nftId] + 1 days < now) {
+            challengesUsed[_nftId] = challengesUsed[_nftId].sub(challengePrice);
+        } else {
+            challengesUsed[_nftId] = challengePrice;
+            challengesDay[_nftId] = now;
+        }
+    }
+
+    // In challenge func need to update challengeDay with now and challengeUsed
     function getChallenges(uint256 _nftId) public view returns (uint256) {
-        // add calculation of challenges that should be derived by score/level/hp - challenge used
-        uint256 challenges = 1000;
-        return challenges.sub(challengesUsed[_nftId]);
+        uint256 challenges = vnft.level(_nftId) / 10; // 1 challenge per day every 10 level
+        if (challengesDay[_nftId] == 0 || challengesDay[_nftId] + 1 days < now) { //We are in a day that never did chalenge or first challenge
+            return challenges;
+        } else {
+            return challenges.sub(challengesUsed[_nftId]);
+        }
     }
 
     function buyAddon(uint256 _nftId, uint256 addonId)
