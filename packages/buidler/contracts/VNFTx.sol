@@ -206,21 +206,24 @@ contract VNFTx is Ownable, ERC1155Holder {
         // A vnft need to get at least x score every two days to be healthy
         uint256 currentScore = vnft.vnftScore(_nftId);
         uint256 timeBorn = vnft.timeVnftBorn(_nftId);
-        uint256 daysLived = (timeBorn.sub(now)).div(1 days);
+        uint256 daysLived = (now.sub(timeBorn)).div(1 days);
+
+        // maybe give people 7 days chance to start calculation hp?
+        if (daysLived < 7) {
+            return 0;
+        }
 
         // multiply by healthy gem divided by 2 (every 2 days)
-        uint256 expectedMinScore = daysLived.mul(healthGem.div(healthGemDays));
+        uint256 expectedScore = daysLived.mul(healthGem.div(healthGemDays));
 
-        if (currentScore < expectedMinScore) // This is unhealthy
+        if (currentScore < expectedScore) // This is unhealthy
         {
             return 0;
+        }
+        if (currentScore >= expectedScore) {
+            return 100;
         } else {
-            return expectedMinScore.div(currentScore).mul(100);
-
-            // This is healthy case //old way, leaving to keep thinking
-            // calculatedHP = currentScore.sub(expectedMinScore).add(
-            //     rarity[_nftId]
-            // );
+            return expectedScore.div(currentScore).mul(100);
         }
     }
 

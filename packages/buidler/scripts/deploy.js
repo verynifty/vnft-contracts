@@ -50,7 +50,10 @@ async function main() {
 
   // mint to other user to test erc1155 works
 
-  await MuseToken.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6", 1000);
+  await MuseToken.mint(
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6",
+    "1000000000000000000000"
+  );
 
   // grant miner role to Master Chef
   await MuseToken.grantRole(
@@ -98,26 +101,70 @@ async function main() {
   );
   console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n");
 
-  const createAddonShield = await VNFTx.createAddon(
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  createAddonShield = await VNFTx.createAddon(
     "shield",
     10,
+    0, //hp
     100,
-    150,
     "RektMeRev",
     VNFTx.address,
     100
   );
 
-  const createAddonHat = await VNFTx.createAddon(
+  createAddonHat = await VNFTx.createAddon(
     "hat",
     10,
+    50,
     100,
-    150,
     "RektMeRev",
     VNFTx.address,
     100
   );
 
+  createAddonHat = await VNFTx.createAddon(
+    "hat",
+    10,
+    50,
+    100,
+    "RektMeRev",
+    VNFTx.address,
+    100
+  );
+  createAddonHat = await VNFTx.createAddon(
+    "hat",
+    40,
+    50,
+    400,
+    "RektMeRev33",
+    VNFTx.address,
+    400
+  );
+  createAddonHat = await VNFTx.createAddon(
+    "hat",
+    10,
+    50,
+    10,
+    "RektMeRev",
+    VNFTx.address,
+    10
+  );
+  createAddonHat = await VNFTx.createAddon(
+    "hat",
+    10,
+    50,
+    100,
+    "RektMeRev",
+    VNFTx.address,
+    100
+  );
   console.log("🚀 Created addon shield and hat \n");
 
   // run action function to test delegate contract
@@ -125,8 +172,8 @@ async function main() {
   console.log("action on delegate contract", challenge);
 
   // @todo that initial hp is always 0
-  // await VNFTx.buyAddon(0, 1);
-  // await VNFTx.buyAddon(0, 2);
+  await VNFTx.buyAddon(0, 1);
+  await VNFTx.buyAddon(0, 2);
 
   // deploy multiVNFT
 
