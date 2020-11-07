@@ -86,8 +86,6 @@ async function main() {
     NiftyAddons.address,
   ]);
 
-  await V1.setVNFTX(VNFTx.address);
-
   await MuseToken.approve(VNFTx.address, "1000000000000000000000");
 
   console.log("🚀 Deployed VNFTx \n");

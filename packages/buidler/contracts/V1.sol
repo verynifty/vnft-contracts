@@ -54,11 +54,13 @@ contract V1 is Ownable, ERC1155Holder {
 
     constructor(
         IVNFT _vnft,
-        IMuseToken _muse,
-        IVNFTx _vnftx
+        IMuseToken _muse
     ) public {
         vnft = _vnft;
         muse = _muse;
+    }
+
+    function setVNFTX(IVNFTx _vnftx) onlyOwner public {
         vnftx = _vnftx;
     }
 

@@ -201,7 +201,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 currentScore = vnft.vnftScore(_nftId);
 
         uint256 daysLived = (timeBorn - now) / 1 days;
-        uint256 expectedMinScore = daysLived * currentScore;
+        uint256 expectedMinScore = daysLived * 50;
 
         uint256 calculatedHP = 0;
         if (currentScore < expectedMinScore) // This is unhealthy
