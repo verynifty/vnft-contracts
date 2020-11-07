@@ -18,13 +18,13 @@ contract V1 is Ownable, ERC1155Holder {
     //for upgradability
     address public delegateContract;
     address[] public previousDelegates;
-    uint256 public total = 1;
+    uint256 public total;
 
     IVNFT public vnft;
     IMuseToken public muse;
     IERC1155 public addons;
 
-    uint256 public artistPct = 5;
+    uint256 public artistPct;
 
     struct Addon {
         string _type;
@@ -47,20 +47,24 @@ contract V1 is Ownable, ERC1155Holder {
     mapping(uint256 => uint256) public rarity;
     mapping(uint256 => uint256) public challengesUsed;
 
+    //!important, decides which gem score hp is based of
+    uint256 public healthGem;
+    uint256 public healthGemDay;
+
+    // premium hp is the min requirement for premium features.
+    uint256 public premiumHp;
+
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
 
     IVNFTx public vnftx;
 
-    constructor(
-        IVNFT _vnft,
-        IMuseToken _muse
-    ) public {
+    constructor(IVNFT _vnft, IMuseToken _muse) public {
         vnft = _vnft;
         muse = _muse;
     }
 
-    function setVNFTX(IVNFTx _vnftx) onlyOwner public {
+    function setVNFTX(IVNFTx _vnftx) public onlyOwner {
         vnftx = _vnftx;
     }
 
@@ -90,12 +94,18 @@ contract V1 is Ownable, ERC1155Holder {
     {
         // require x challenges and x hp or xx rarity for battles
         require(
-            vnftx.getChallenges(_nftId) >= 1 && rarity[_nftId] >= 100,
+            vnftx.getChallenges(_nftId) >= 1 &&
+                rarity[_nftId] >= 100 &&
+                vnftx.getHp(_nftId) >= premiumHp &&
+                vnft.level(_nftId) >= vnft.level(_opponent),
             "can't challenge"
         );
 
         // require opponent to be of certain threshold
-        require(vnftx.getHp(_opponent) <= 100, "You can't attack this pet");
+        require(
+            vnftx.getHp(_opponent) <= vnftx.getHp(_nftId),
+            "You can't attack this pet"
+        );
 
         // challenge used.
         challengesUsed[_nftId] = challengesUsed[_nftId].sub(1);
@@ -103,18 +113,19 @@ contract V1 is Ownable, ERC1155Holder {
         // decrease something, maybe rarity or something that will lower the opponents hp;
         rarity[_opponent] = rarity[_opponent].sub(100);
 
-        // send muse to attacker based on condition
+        // send muse to attacker based on condition, maybe level of opponent
         muse.mint(msg.sender, 1 ether);
     }
 
-    function cash(uint256 _nftId) external {
+    function cash(uint256 _nftId) external tokenOwner(_nftId) {
         //require to own the accessory and maintain x level of hp
         require(
-            addonsConsumed[_nftId].contains(1) && vnftx.getHp(_nftId) >= 1000,
+            addonsConsumed[_nftId].contains(1) &&
+                vnftx.getHp(_nftId) >= premiumHp,
             "You need to buy the accessory"
         );
 
-        // do calculation based on level and muse acquired.
+        //TOOD do calculation based on level and muse acquired, should qualify for intervals so not all players get caashback at same price.
 
         // calculate deserving amount and send to user;
         uint256 amount = 100 * 10**18;

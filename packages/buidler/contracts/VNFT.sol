@@ -194,7 +194,7 @@ contract VNFT is
     // change how much to burn on each buy and how much goes to community.
     function changeBurnPercentage(uint256 percentage) external onlyOperator {
         require(percentage <= 100);
-        burnPercentage = burnPercentage;
+        burnPercentage = percentage;
         emit BurnPercentageChanged(burnPercentage);
     }
 
@@ -281,7 +281,7 @@ contract VNFT is
         la = _la;
         lb = _lb;
         ra = _ra;
-        lb = _rb;
+        rb = _rb;
     }
 
     uint256 la = 2;

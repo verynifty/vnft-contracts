@@ -140,7 +140,13 @@ contract VNFTx is Ownable, ERC1155Holder {
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
     mapping(uint256 => uint256) public challengesUsed;
-    mapping(uint256 => uint256) public challengesDay;
+
+    //!important, decides which gem score hp is based of
+    uint256 public healthGem = 100;
+    uint256 public healthGemDays = 2;
+
+    // premium hp is the min requirement for premium features.
+    uint256 public premiumHp = 90;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -196,43 +202,45 @@ contract VNFTx is Ownable, ERC1155Holder {
             //vnft with expired TOD have no health
             return 0;
         }
-        // A vnft need to get at least 100 score every two days to be healthy
-        uint256 timeBorn = vnft.timeVnftBorn(_nftId) - 4 days;
+
+        // A vnft need to get at least x score every two days to be healthy
         uint256 currentScore = vnft.vnftScore(_nftId);
+        uint256 timeBorn = vnft.timeVnftBorn(_nftId);
+        uint256 daysLived = (timeBorn.sub(now)).div(1 days);
 
-        uint256 daysLived = (timeBorn - now) / 1 days;
-        uint256 expectedMinScore = daysLived * 50;
+        // multiply by healthy gem divided by 2 (every 2 days)
+        uint256 expectedMinScore = daysLived.mul(healthGem.div(healthGemDays));
 
-        uint256 calculatedHP = 0;
         if (currentScore < expectedMinScore) // This is unhealthy
         {
-            calculatedHP = 0;
+            return 0;
         } else {
-            // This is healthy case
-            calculatedHP = currentScore.sub(expectedMinScore).add(rarity[_nftId]);
+            return expectedMinScore.div(currentScore).mul(100);
+
+            // This is healthy case //old way, leaving to keep thinking
+            // calculatedHP = currentScore.sub(expectedMinScore).add(
+            //     rarity[_nftId]
+            // );
         }
-        return calculatedHP;
     }
 
     //Not tested but should be the one called when a vnft use a challenge
     //Might need to put the rquire also to check if callable even if the safemath would throw in case of sub < 0
-    function useChallenge(uint256 _nftId, uint256 challengePrice) private {
-        if (challengesDay[_nftId] + 1 days < now) {
-            challengesUsed[_nftId] = challengesUsed[_nftId].sub(challengePrice);
-        } else {
-            challengesUsed[_nftId] = challengePrice;
-            challengesDay[_nftId] = now;
-        }
-    }
+    // function useChallenge(uint256 _nftId, uint256 challengePrice) private {
+    //     if (challengesDay[_nftId] + 1 days < now) {
+    //         challengesUsed[_nftId] = challengesUsed[_nftId].sub(challengePrice);
+    //     } else {
+    //         challengesUsed[_nftId] = challengePrice;
+    //         challengesDay[_nftId] = now;
+    //     }
+    // }
 
-    // In challenge func need to update challengeDay with now and challengeUsed
     function getChallenges(uint256 _nftId) public view returns (uint256) {
-        uint256 challenges = vnft.level(_nftId) / 10; // 1 challenge per day every 10 level
-        if (challengesDay[_nftId] == 0 || challengesDay[_nftId] + 1 days < now) { //We are in a day that never did chalenge or first challenge
-            return challenges;
-        } else {
-            return challenges.sub(challengesUsed[_nftId]);
+        if (vnft.level(_nftId) <= challengesUsed[_nftId]) {
+            return 0;
         }
+
+        return vnft.level(_nftId).sub(challengesUsed[_nftId]);
     }
 
     function buyAddon(uint256 _nftId, uint256 addonId)
@@ -315,6 +323,10 @@ contract VNFTx is Ownable, ERC1155Holder {
         public
         tokenOwner(_nftId)
     {
+        require(
+            addonsConsumed[_nftId].contains(_addonID),
+            "Pet doesn't have this addon"
+        );
         Addon storage _addon = addon[_addonID];
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
 
@@ -439,6 +451,16 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     function setArtistPct(uint256 _newPct) external onlyOwner {
         artistPct = _newPct;
+    }
+
+    function setHealthStrat(
+        uint256 _score,
+        uint256 _days,
+        uint256 _premiumHp
+    ) external onlyOwner {
+        healthGem = _score;
+        healthGemDays = _days;
+        premiumHp = _premiumHp;
     }
 
     function pause(bool _paused) public onlyOwner {
