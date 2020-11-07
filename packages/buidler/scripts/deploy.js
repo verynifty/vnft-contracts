@@ -73,6 +73,44 @@ async function main() {
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
   console.log("🚀 Minted one vNFT to for test \n");
 
+  await MuseToken.approve(VNFT.address, "100000000000000000000000000000000000");
+
+  // start 9 days of mining and claiming
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  await VNFT.claimMiningRewards(0);
+  await VNFT.buyAccesory(0, 1);
+  // end 9 days of mining and claiming
   // deploy VNFTx.sol
 
   const NiftyAddons = await deploy("NiftyAddons", [
@@ -108,6 +146,9 @@ async function main() {
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
 
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+
+  const hp = await VNFTx.getHp(0);
+  console.log("your hp after 9 days is: ", hp.toString());
 
   createAddonShield = await VNFTx.createAddon(
     "shield",
