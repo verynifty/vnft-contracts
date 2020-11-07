@@ -18,13 +18,13 @@ contract V1 is Ownable, ERC1155Holder {
     //for upgradability
     address public delegateContract;
     address[] public previousDelegates;
-    uint256 public total;
+    uint256 public total = 1;
 
     IVNFT public vnft;
     IMuseToken public muse;
     IERC1155 public addons;
 
-    uint256 public artistPct;
+    uint256 public artistPct = 5;
 
     struct Addon {
         string _type;
@@ -48,11 +48,11 @@ contract V1 is Ownable, ERC1155Holder {
     mapping(uint256 => uint256) public challengesUsed;
 
     //!important, decides which gem score hp is based of
-    uint256 public healthGem;
-    uint256 public healthGemDay;
+    uint256 public healthGem = 100;
+    uint256 public healthGemDays = 2;
 
     // premium hp is the min requirement for premium features.
-    uint256 public premiumHp;
+    uint256 public premiumHp = 90;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;

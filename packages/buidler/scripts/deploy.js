@@ -212,6 +212,9 @@ async function main() {
   const challenge = await VNFTx.action("challenge1(uint256)", 0);
   console.log("action on delegate contract", challenge);
 
+  const rarity = await VNFTx.rarity(0);
+  console.log("rarity: ", rarity.toString());
+
   // @todo that initial hp is always 0
   await VNFTx.buyAddon(0, 1);
   await VNFTx.buyAddon(0, 2);
