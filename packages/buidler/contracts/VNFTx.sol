@@ -146,7 +146,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     uint256 public healthGemDays = 2;
 
     // premium hp is the min requirement for premium features.
-    uint256 public premiumHp = 1000;
+    uint256 public premiumHp = 90;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;

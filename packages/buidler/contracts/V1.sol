@@ -18,13 +18,13 @@ contract V1 is Ownable, ERC1155Holder {
     //for upgradability
     address public delegateContract;
     address[] public previousDelegates;
-    uint256 public total = 1;
+    uint256 public total;
 
     IVNFT public vnft;
     IMuseToken public muse;
     IERC1155 public addons;
 
-    uint256 public artistPct = 5;
+    uint256 public artistPct;
 
     struct Addon {
         string _type;
@@ -48,8 +48,11 @@ contract V1 is Ownable, ERC1155Holder {
     mapping(uint256 => uint256) public challengesUsed;
 
     //!important, decides which gem score hp is based of
-    uint256 public healthGem = 100;
-    uint256 public healthGemDays = 2;
+    uint256 public healthGem;
+    uint256 public healthGemDay;
+
+    // premium hp is the min requirement for premium features.
+    uint256 public premiumHp;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -93,7 +96,7 @@ contract V1 is Ownable, ERC1155Holder {
         require(
             vnftx.getChallenges(_nftId) >= 1 &&
                 rarity[_nftId] >= 100 &&
-                vnftx.getHp(_nftId) >= 80,
+                vnftx.getHp(_nftId) >= premiumHp,
             "can't challenge"
         );
 
@@ -116,7 +119,8 @@ contract V1 is Ownable, ERC1155Holder {
     function cash(uint256 _nftId) external tokenOwner(_nftId) {
         //require to own the accessory and maintain x level of hp
         require(
-            addonsConsumed[_nftId].contains(1) && vnftx.getHp(_nftId) >= 1000,
+            addonsConsumed[_nftId].contains(1) &&
+                vnftx.getHp(_nftId) >= premiumHp,
             "You need to buy the accessory"
         );
 
