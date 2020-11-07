@@ -96,7 +96,8 @@ contract V1 is Ownable, ERC1155Holder {
         require(
             vnftx.getChallenges(_nftId) >= 1 &&
                 rarity[_nftId] >= 100 &&
-                vnftx.getHp(_nftId) >= premiumHp,
+                vnftx.getHp(_nftId) >= premiumHp &&
+                vnft.level(_nftId) >= vnft.level(_opponent),
             "can't challenge"
         );
 
@@ -112,7 +113,7 @@ contract V1 is Ownable, ERC1155Holder {
         // decrease something, maybe rarity or something that will lower the opponents hp;
         rarity[_opponent] = rarity[_opponent].sub(100);
 
-        // send muse to attacker based on condition
+        // send muse to attacker based on condition, maybe level of opponent
         muse.mint(msg.sender, 1 ether);
     }
 
