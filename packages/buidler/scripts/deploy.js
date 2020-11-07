@@ -112,17 +112,7 @@ async function main() {
   createAddonShield = await VNFTx.createAddon(
     "shield",
     10,
-    100,
-    100,
-    "RektMeRev",
-    VNFTx.address,
-    100
-  );
-
-  createAddonHat = await VNFTx.createAddon(
-    "hat",
-    10,
-    100,
+    0,
     100,
     "RektMeRev",
     VNFTx.address,
@@ -132,7 +122,17 @@ async function main() {
   createAddonHat = await VNFTx.createAddon(
     "hat",
     10,
+    10,
     100,
+    "RektMeRev",
+    VNFTx.address,
+    100
+  );
+
+  createAddonHat = await VNFTx.createAddon(
+    "hat",
+    10,
+    20,
     100,
     "RektMeRev",
     VNFTx.address,
@@ -141,7 +141,7 @@ async function main() {
   createAddonHat = await VNFTx.createAddon(
     "hat",
     40,
-    101,
+    50,
     400,
     "RektMeRev33",
     VNFTx.address,
@@ -159,7 +159,7 @@ async function main() {
   createAddonHat = await VNFTx.createAddon(
     "hat",
     10,
-    103,
+    50,
     100,
     "RektMeRev",
     VNFTx.address,
