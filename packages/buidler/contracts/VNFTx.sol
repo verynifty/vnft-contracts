@@ -323,6 +323,10 @@ contract VNFTx is Ownable, ERC1155Holder {
         public
         tokenOwner(_nftId)
     {
+        require(
+            addonsConsumed[_nftId].contains(_addonID),
+            "Pet doesn't have this addon"
+        );
         Addon storage _addon = addon[_addonID];
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
 
