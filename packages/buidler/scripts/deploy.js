@@ -240,7 +240,7 @@ async function main() {
   // test nifty Multi mine/feed
   await VNFT.addCareTaker(0, MultiVnft.address);
 
-  await MultiVnft.claimMultiple([0]);
+  // await MultiVnft.claimMultiple([0]);
 
   console.log("Claimed Multiple workED!");
 }

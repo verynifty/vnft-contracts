@@ -1,7 +1,10 @@
 pragma solidity ^0.6.0;
+import "@openzeppelin/contracts/introspection/IERC165.sol";
 
-interface IVNFT {
+interface IVNFT is IERC165 {
     // function ownerOf(uint256 _tokenId) external view returns (address _owner);
+
+    function balanceOf(address owner) external view returns (uint256 balance);
 
     function totalSupply() external view returns (uint256);
 
@@ -67,4 +70,6 @@ interface IVNFT {
         external
         view
         returns (uint256 _born);
+
+    function mint(address to) external;
 }
