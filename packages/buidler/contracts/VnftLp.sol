@@ -34,6 +34,9 @@ contract VnftLp is Ownable {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 vnftId; //he needs to provide a pet id that will have to stay alive for him to keep getting reward
+        //how many pets address redeemed in pool
+
+        uint256 redeemed;
     }
 
     // Info of each pool.
@@ -67,8 +70,6 @@ contract VnftLp is Ownable {
     uint256 public totalAllocPoint = 0;
     // The block number when Points mining starts.
     uint256 public startBlock;
-    //how many pets address redeemed in pool
-    mapping(uint256 => mapping(address => uint256)) public redeemed;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -199,7 +200,7 @@ contract VnftLp is Ownable {
             }
             return
                 user.amount.mul(accPointsPerShare).div(1e12).sub(
-                    redeemed[_pid][msg.sender].mul(vnftPrice)
+                    user.redeemed.mul(vnftPrice)
                 );
         }
     }
@@ -262,6 +263,9 @@ contract VnftLp is Ownable {
             withdraw(_pid);
         } else {
             updatePool(_pid);
+
+            UserInfo storage user = userInfo[_pid][msg.sender];
+
             uint256 pending = pendingPoints(_pid, msg.sender);
 
             require(
@@ -271,7 +275,7 @@ contract VnftLp is Ownable {
             // here mints nft
             vnft.mint(msg.sender);
 
-            redeemed[_pid][msg.sender] = redeemed[_pid][msg.sender].add(1);
+            user.redeemed = user.redeemed.add(1);
 
             emit Redeem(msg.sender, _pid);
         }
@@ -284,10 +288,10 @@ contract VnftLp is Ownable {
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
-        redeemed[_pid][msg.sender] = 0;
+        user.redeemed = 0;
     }
 
-    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner{
+    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner {
         pointsPerBlock = _pointsPerBlock;
     }
 

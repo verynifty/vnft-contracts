@@ -220,17 +220,6 @@ contract VNFTx is Ownable, ERC1155Holder {
         }
     }
 
-    //Not tested but should be the one called when a vnft use a challenge
-    //Might need to put the rquire also to check if callable even if the safemath would throw in case of sub < 0
-    // function useChallenge(uint256 _nftId, uint256 challengePrice) private {
-    //     if (challengesDay[_nftId] + 1 days < now) {
-    //         challengesUsed[_nftId] = challengesUsed[_nftId].sub(challengePrice);
-    //     } else {
-    //         challengesUsed[_nftId] = challengePrice;
-    //         challengesDay[_nftId] = now;
-    //     }
-    // }
-
     function getChallenges(uint256 _nftId) public view returns (uint256) {
         if (vnft.level(_nftId) <= challengesUsed[_nftId]) {
             return 0;
