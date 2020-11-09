@@ -47,8 +47,6 @@ contract VnftLp is Ownable {
     // The vNFTs
     IVNFT public vnft;
 
-    // Dev address.
-    address public devaddr;
     // Block number when bonus Points period ends.
     uint256 public bonusEndBlock;
     // Points created per block.
@@ -82,7 +80,6 @@ contract VnftLp is Ownable {
     );
 
     constructor(uint256 _pointsPerBlock, address _vnft) public {
-        devaddr = msg.sender;
         pointsPerBlock = _pointsPerBlock;
         vnft = IVNFT(_vnft);
         // bonusEndBlock = block.number.add(46523);
@@ -290,19 +287,11 @@ contract VnftLp is Ownable {
         redeemed[_pid][msg.sender] = 0;
     }
 
-    // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: wut?");
-        devaddr = _devaddr;
-    }
-
-    function setPointsPerBlock(uint256 _pointsPerBlock) public {
-        require(msg.sender == devaddr, "dev: wut?");
+    function setPointsPerBlock(uint256 _pointsPerBlock) public onlyOwner{
         pointsPerBlock = _pointsPerBlock;
     }
 
-    function setVnftPrice(uint256 _vnftPrice) public {
-        require(msg.sender == devaddr, "dev: wut?");
+    function setVnftPrice(uint256 _vnftPrice) public onlyOwner {
         vnftPrice = _vnftPrice * 10**18;
     }
 }
