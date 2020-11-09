@@ -6,6 +6,8 @@ interface IVNFT is IERC165 {
 
     function balanceOf(address owner) external view returns (uint256 balance);
 
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256 id);
+
     function totalSupply() external view returns (uint256);
 
     function fatality(uint256 _deadId, uint256 _tokenId) external;

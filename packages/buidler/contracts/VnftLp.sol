@@ -71,9 +71,11 @@ contract VnftLp is Ownable {
     // The block number when Points mining starts.
     uint256 public startBlock;
 
+    mapping(uint256 => uint256) public vnftRedeemed;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event Redeem(address indexed user, uint256 indexed pid);
+    event Redeem(address indexed user, uint256 indexed pid, uint256 newvnftid);
     event EmergencyWithdraw(
         address indexed user,
         uint256 indexed pid,
@@ -272,10 +274,12 @@ contract VnftLp is Ownable {
             );
             // here mints nft
             vnft.mint(msg.sender);
+            uint256 newvnftid = vnft.tokenOfOwnerByIndex(address(msg.sender), vnft.balanceOf(address(msg.sender)) - 1);
+            vnftRedeemed[newvnftid] = block.number;
 
             user.redeemed = user.redeemed.add(vnftPrice);
 
-            emit Redeem(msg.sender, _pid);
+            emit Redeem(msg.sender, _pid, newvnftid);
         }
     }
 
