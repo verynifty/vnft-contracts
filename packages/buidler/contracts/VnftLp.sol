@@ -199,9 +199,7 @@ contract VnftLp is Ownable {
                 );
             }
             return
-                user.amount.mul(accPointsPerShare).div(1e12).sub(
-                    user.redeemed.mul(vnftPrice)
-                );
+                user.amount.mul(accPointsPerShare).div(1e12).sub(user.redeemed);
         }
     }
 
@@ -275,7 +273,7 @@ contract VnftLp is Ownable {
             // here mints nft
             vnft.mint(msg.sender);
 
-            user.redeemed = user.redeemed.add(1);
+            user.redeemed = user.redeemed.add(vnftPrice);
 
             emit Redeem(msg.sender, _pid);
         }
