@@ -15,14 +15,15 @@ async function main() {
 
   const VNFT = await deploy("VNFT", [MuseToken.address]);
 
-  const VnftLp = await deploy("VnftLp", [43, VNFT.address]);
+  //   points (in wei) to mint per block to get to 2k a day == 305857164704083000
+  const VnftLp = await deploy("VnftLp", ["305857164704083000", VNFT.address]);
 
   //   create accessory so can fee pet to test more lp days
   const threeDays = 60 * 60 * 24 * 3;
   await VNFT.createItem("diamond", 5, 100, threeDays);
 
   //   create pool with LP1 token
-  await VnftLp.add(100, LP1.address, true);
+  await VnftLp.add(100000, LP1.address, true);
   console.log("🚀 added LP1 token pool \n");
 
   // grant minter role to VnftLp
@@ -69,7 +70,15 @@ async function main() {
   console.log("user lp deposit: ", userDeposit.toString());
 
   // start 9 days of mining and claiming
-  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+  for (i = 0; i < 2000; i++) {
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+    await ethers.provider.send("evm_mine"); // mine the next block
+  }
+  console.log("move 2000 blocks...\n");
+
+  //   update pool
+  await VnftLp.massUpdatePools();
+
   //   buy accessory so can stay alive
   await VNFT.buyAccesory(0, 1);
 
@@ -77,7 +86,61 @@ async function main() {
     0,
     "0xc783df8a850f42e7F7e57013759C285caa701eB6"
   );
-  console.log("1 day passed, got points: ", pending.toString());
+  console.log("after 2000 blocks, got points: ", pending.toString());
+
+  await VnftLp.redeem(0);
+
+  console.log("redeemed 1 pet \n");
+
+  await VnftLp.updatePool(0);
+
+  pending = await VnftLp.pendingPoints(
+    0,
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6"
+  );
+  console.log("after redeeming: ", pending.toString() + "\n");
+
+  const NFTBalance = await VNFT.balanceOf(
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6"
+  );
+  console.log("nft balance", NFTBalance.toString());
+
+  //   deposit more on top to see if recalculates
+
+  //   deposit more
+  console.log("🚀 Depositing more \n");
+
+  await VnftLp.deposit(0, "1000000000000000000");
+  console.log("🚀 Depsoited 1Lp into pool \n");
+
+  //   another 2k blocks
+  for (i = 0; i < 2000; i++) {
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
+    await ethers.provider.send("evm_mine"); // mine the next block
+  }
+  console.log("move 2000 blocks...\n");
+
+  pending = await VnftLp.pendingPoints(
+    0,
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6"
+  );
+  console.log("after 2000 more blocks, got points: ", pending.toString());
+
+  await VnftLp.updatePool(0);
+
+  pending = await VnftLp.pendingPoints(
+    0,
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6"
+  );
+  console.log("final after updatePool(): ", pending.toString());
+
+  await VnftLp.withdraw(0);
+  console.log("withdraw from pool!");
+
+  const finalBalance = await LP1.balanceOf(
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6"
+  );
+  console.log("Final balance: ", finalBalance.toString());
 }
 
 async function deploy(name, _args) {

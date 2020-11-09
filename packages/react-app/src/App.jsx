@@ -115,6 +115,14 @@ function App() {
       */}
 
       <Contract
+        name="VnftLp"
+        signer={userProvider.getSigner()}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+      />
+
+      <Contract
         name="VNFT"
         signer={userProvider.getSigner()}
         provider={localProvider}

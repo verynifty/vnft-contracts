@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+// import "@nomiclabs/buidler/console.sol";
+
 import "./interfaces/IVNFT.sol";
 
 interface IMigratorChef {
@@ -31,18 +33,6 @@ contract VnftLp is Ownable {
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-        //
-        // We do some fancy math here. Basically, any point in time, the amount of Muse
-        // entitled to a user but is pending to be distributed is:
-        //
-        //   pending reward = (user.amount * pool.accMusePerShare) - user.rewardDebt
-        //
-        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accMusePerShare` (and `lastRewardBlock`) gets updated.
-        //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated.
-        //   4. User's `rewardDebt` gets updated.
         uint256 vnftId; //he needs to provide a pet id that will have to stay alive for him to keep getting reward
     }
 
@@ -61,14 +51,15 @@ contract VnftLp is Ownable {
     address public devaddr;
     // Block number when bonus MUSE period ends.
     uint256 public bonusEndBlock;
-    // MUSE tokens created per block.
+    // Points created per block.
     uint256 public pointsPerBlock;
     // points needed to withdraw vnft
-    uint256 public vnftPrice = 400;
-    // Bonus muliplier for early MUSE makers.
-    uint256 public constant BONUS_MULTIPLIER = 10;
+    uint256 public vnftPrice = 400 * 10**18;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
+
+    // Bonus muliplier for early Point makers.
+    uint256 public constant BONUS_MULTIPLIER = 10;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -78,12 +69,12 @@ contract VnftLp is Ownable {
     uint256 public totalAllocPoint = 0;
     // The block number when MUSE mining starts.
     uint256 public startBlock;
-
-    // pending balance for each user, updates after new deposit
-    mapping(uint256 => mapping(address => uint256)) public balance;
+    //how many pets address redeemed in pool
+    mapping(uint256 => mapping(address => uint256)) public redeemed;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event Redeem(address indexed user, uint256 indexed pid);
     event EmergencyWithdraw(
         address indexed user,
         uint256 indexed pid,
@@ -180,7 +171,7 @@ contract VnftLp is Ownable {
 
     // View function to see pending Muse on frontend.
     function pendingPoints(uint256 _pid, address _user)
-        external
+        public
         view
         returns (uint256)
     {
@@ -191,27 +182,28 @@ contract VnftLp is Ownable {
             PoolInfo storage pool = poolInfo[_pid];
             UserInfo storage user = userInfo[_pid][_user];
             uint256 accPointsPerShare = pool.accPointsPerShare;
+
             uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+
             if (block.number > pool.lastRewardBlock && lpSupply != 0) {
                 uint256 multiplier = getMultiplier(
                     pool.lastRewardBlock,
                     block.number
                 );
-                uint256 museReward = multiplier
+
+                uint256 pointsReward = multiplier
                     .mul(pointsPerBlock)
                     .mul(pool.allocPoint)
                     .div(totalAllocPoint);
+
                 accPointsPerShare = accPointsPerShare.add(
-                    museReward.mul(1e12).div(lpSupply)
+                    pointsReward.mul(1e12).div(lpSupply)
                 );
             }
             return
-                user
-                    .amount
-                    .mul(accPointsPerShare)
-                    .div(1e12)
-                    .sub(user.rewardDebt)
-                    .sub(balance[_pid][_user]);
+                user.amount.mul(accPointsPerShare).div(1e12).sub(
+                    redeemed[_pid][msg.sender].mul(vnftPrice)
+                );
         }
     }
 
@@ -235,6 +227,7 @@ contract VnftLp is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+
         uint256 pointsReward = multiplier
             .mul(pointsPerBlock)
             .mul(pool.allocPoint)
@@ -255,85 +248,46 @@ contract VnftLp is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (user.amount > 0) {
-            uint256 pending = user
-                .amount
-                .mul(pool.accPointsPerShare)
-                .div(1e12)
-                .sub(user.rewardDebt);
-            balance[_pid][msg.sender] = balance[_pid][msg.sender].add(pending);
-        }
+
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
             _amount
         );
+
         user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accPointsPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // // Withdraw LP tokens from MasterChef.
-    // function withdraw(uint256 _pid, uint256 _amount) public {
-    //     // if he doesn't own a vNFT when withdrawing, send him stake without rewards
-    //     if (vnft.balanceOf(msg.sender) == 0) {
-    //         emergencyWithdraw(_pid);
-    //     } else {
-    //         PoolInfo storage pool = poolInfo[_pid];
-    //         UserInfo storage user = userInfo[_pid][msg.sender];
-    //         require(user.amount >= _amount, "withdraw: not good");
-    //         updatePool(_pid);
-    //         uint256 pending = user
-    //             .amount
-    //             .mul(pool.accPointsPerShare)
-    //             .div(1e12)
-    //             .sub(user.rewardDebt);
-
-    //         if (pending >= vnftPrice) {
-    //             vnft.mint(msg.sender);
-    //         }
-    //         // here mints nft
-    //         balance[_pid][msg.sender] = balance[_pid][msg.sender].add(pending);
-
-    //         user.amount = user.amount.sub(_amount);
-    //         user.rewardDebt = user.amount.mul(pool.accPointsPerShare).div(1e12);
-    //         pool.lpToken.safeTransfer(address(msg.sender), _amount);
-    //         emit Withdraw(msg.sender, _pid, _amount);
-    //     }
-    // }
-
-    function redeem(uint256 _pid, uint256 _amount) public {
+    function redeem(uint256 _pid) public {
         // if he doesn't own a vNFT when withdrawing, send him stake without rewards
         if (vnft.balanceOf(msg.sender) == 0) {
-            emergencyWithdraw(_pid);
+            withdraw(_pid);
         } else {
-            PoolInfo storage pool = poolInfo[_pid];
-            UserInfo storage user = userInfo[_pid][msg.sender];
             updatePool(_pid);
-            uint256 pending = user
-                .amount
-                .mul(pool.accPointsPerShare)
-                .div(1e12)
-                .sub(user.rewardDebt);
+            uint256 pending = pendingPoints(_pid, msg.sender);
 
+            require(
+                pending >= vnftPrice,
+                "You don't have enough points to redeem"
+            );
             // here mints nft
-            if (pending >= vnftPrice) {
-                vnft.mint(msg.sender);
-            }
-            balance[_pid][msg.sender] = balance[_pid][msg.sender].add(pending);
-            emit Withdraw(msg.sender, _pid, _amount);
+            vnft.mint(msg.sender);
+
+            redeemed[_pid][msg.sender] = redeemed[_pid][msg.sender].add(1);
+
+            emit Redeem(msg.sender, _pid);
         }
     }
 
-    // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    // Withdraw without rewards.
+    function withdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
-        user.rewardDebt = 0;
-        balance[_pid][msg.sender] = 0;
+        redeemed[_pid][msg.sender] = 0;
     }
 
     // Update dev address by the previous dev.
@@ -349,6 +303,6 @@ contract VnftLp is Ownable {
 
     function setVnftPrice(uint256 _vnftPrice) public {
         require(msg.sender == devaddr, "dev: wut?");
-        vnftPrice = _vnftPrice;
+        vnftPrice = _vnftPrice * 10**18;
     }
 }
