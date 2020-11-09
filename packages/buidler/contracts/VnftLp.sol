@@ -39,8 +39,8 @@ contract VnftLp is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. MUSE to distribute per block.
-        uint256 lastRewardBlock; // Last block number that MUSE distribution occurs.
+        uint256 allocPoint; // How many allocation points assigned to this pool. Points to distribute per block.
+        uint256 lastRewardBlock; // Last block number that Points distribution occurs.
         uint256 accPointsPerShare; // Accumulated points per share, times 1e12. See below.
     }
 
@@ -49,7 +49,7 @@ contract VnftLp is Ownable {
 
     // Dev address.
     address public devaddr;
-    // Block number when bonus MUSE period ends.
+    // Block number when bonus Points period ends.
     uint256 public bonusEndBlock;
     // Points created per block.
     uint256 public pointsPerBlock;
@@ -67,7 +67,7 @@ contract VnftLp is Ownable {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when MUSE mining starts.
+    // The block number when Points mining starts.
     uint256 public startBlock;
     //how many pets address redeemed in pool
     mapping(uint256 => mapping(address => uint256)) public redeemed;
@@ -119,7 +119,7 @@ contract VnftLp is Ownable {
         );
     }
 
-    // Update the given pool's MUSE allocation point. Can only be called by the owner.
+    // Update the given pool's Points allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint,
@@ -169,7 +169,7 @@ contract VnftLp is Ownable {
         }
     }
 
-    // View function to see pending Muse on frontend.
+    // View function to see pending Points on frontend.
     function pendingPoints(uint256 _pid, address _user)
         public
         view
