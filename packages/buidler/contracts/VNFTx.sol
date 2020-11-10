@@ -263,6 +263,10 @@ contract VNFTx is Ownable, ERC1155Holder {
         notPaused
     {
         require(
+            !addonsConsumed[_nftId].contains(_addonID),
+            "Pet already has this addon"
+        );
+        require(
             addons.balanceOf(msg.sender, _addonID) >= 1,
             "!own the addon to use it"
         );

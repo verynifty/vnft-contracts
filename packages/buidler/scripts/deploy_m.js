@@ -2,14 +2,35 @@ const fs = require("fs");
 const chalk = require("chalk");
 const { config, ethers } = require("@nomiclabs/buidler");
 
-MUSE_TOKEN = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
-VNFT_CONTRACT = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
-PETAIRDROP = "0x822b6eCB40467F1d3F4779814f323e19168C6E29";
-STAKING = "0x45d3a7a9ed477a1B3351175b2868CE3D39502D35";
-MASTERCHEF = "0x8Ec750EEE372d90b3b96D52B4eb68aB3270B5419";
-
 async function main() {
-  const VnftLp = await deploy("VnftLp", ["305857164704083000", VNFT_CONTRACT]);
+  console.log("📡 Deploy \n");
+  // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
+  // await autoDeploy();
+  // OR
+  // custom deploy (to use deployed addresses)
+
+  const MuseToken = await deploy("MuseToken");
+  console.log("🚀 Deployed Muse \n");
+
+  const VNFT = await deploy("VNFT", [MuseToken.address]);
+  console.log("🚀 Deployed Vnft \n");
+
+  // grant miner role to VNFT
+  await MuseToken.grantRole(
+    "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
+    VNFT.address
+  );
+  console.log("🚀 Granted MuseToken Minter Role to VNFT \n");
+
+  await MuseToken.mint(
+    "0xc783df8a850f42e7F7e57013759C285caa701eB6",
+    "1000000000000000000000"
+  );
+
+  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  console.log("🚀 Minted one vNFT to for test \n");
+
+  await MuseToken.approve(VNFT.address, "100000000000000000000000000000000000");
 }
 
 async function deploy(name, _args) {

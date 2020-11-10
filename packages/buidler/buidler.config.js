@@ -74,6 +74,13 @@ module.exports = {
         mnemonic: mnemonic(),
       },
     },
+    matic: {
+      url: `https://rpc-mumbai.matic.today`,
+      gasPrice: 1000000000,
+      accounts: {
+        mnemonic: mnemonic(),
+      },
+    },
   },
   solc: {
     version: "0.6.6",
