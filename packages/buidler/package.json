@@ -20,13 +20,16 @@
     "chalk": "^4.1.0",
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.7",
-    "node-watch": "^0.6.4"
+    "node-watch": "^0.6.4",
+    "web3": "^1.3.0",
+    "web3-eth-abi": "^1.3.0"
   },
   "scripts": {
     "chain": "buidler node",
     "test": "buidler test --network buidlerevm",
     "compile": "buidler compile",
     "lp": "buidler run scripts/deploy_vnftLp.js && buidler run scripts/publish.js",
+    "lp2": "buidler run scripts/deploy_vnftLp2.js && buidler run scripts/publish.js",
     "deploy": "buidler run scripts/deploy.js && buidler run scripts/publish.js",
     "watch": "node scripts/watch.js",
     "accounts": "buidler accounts",

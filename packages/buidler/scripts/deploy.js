@@ -2,6 +2,8 @@ const fs = require("fs");
 const chalk = require("chalk");
 const { config, ethers } = require("@nomiclabs/buidler");
 
+const web3Abi = require("web3-eth-abi");
+
 async function main() {
   console.log("📡 Deploy \n");
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
@@ -209,7 +211,16 @@ async function main() {
   console.log("🚀 Created addon shield and hat \n");
 
   // run action function to test delegate contract
-  const challenge = await VNFTx.action("challenge1(uint256)", 0);
+
+  // encode params in bytes
+  const data = await web3Abi.encodeParameters(
+    ["uint256", "uint256"],
+    ["0", "100"]
+  );
+
+  console.log("data", data);
+
+  const challenge = await VNFTx.action("challenge1(bytes)", data);
   console.log("action on delegate contract", challenge);
 
   const rarity = await VNFTx.rarity(0);

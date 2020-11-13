@@ -10,6 +10,8 @@ import "./interfaces/IMuseToken.sol";
 import "./interfaces/IVNFT.sol";
 import "./interfaces/IVNFTx.sol";
 
+// import "@nomiclabs/buidler/console.sol";
+
 // @TODO create interface for VNFTx
 contract V1 is Ownable, ERC1155Holder {
     using SafeMath for uint256;
@@ -83,8 +85,13 @@ contract V1 is Ownable, ERC1155Holder {
     }
 
     // func to test store update with delegatecall
-    function challenge1(uint256 _nftId) public {
-        rarity[_nftId] = rarity[_nftId] + 888;
+    function challenge1(bytes memory data) public {
+        uint256 _nftId;
+        uint256 _add;
+        // decode params
+        (_nftId, _add) = abi.decode(data, (uint256, uint256));
+
+        rarity[_nftId] = rarity[_nftId] + 888 + _add;
     }
 
     // simple battle for muse

@@ -103,8 +103,9 @@ interface IERC1155 is IERC165 {
     ) external;
 }
 
-// @TODO add "health" system basde on a level time progression algorithm.
+// import "@nomiclabs/buidler/console.sol";
 
+// @TODO add "health" system basde on a level time progression algorithm.
 contract VNFTx is Ownable, ERC1155Holder {
     using SafeMath for uint256;
 
@@ -173,7 +174,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         require(
             vnft.ownerOf(_id) == msg.sender ||
                 vnft.careTaker(_id, vnft.ownerOf(_id)) == msg.sender,
-            "You must own the vNFT or be a care taker to buy addons"
+            "You must own the vNFT or be a care taker"
         );
         _;
     }
@@ -292,7 +293,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _addonID,
         uint256 _toId
     ) external tokenOwner(_nftId) {
-        // maybe don't let transfer cash addon.
+        // maybe don't let transfer cash addon, or maybe yes as accessory in low supply?
         require(_addonID != 1, "this addon is instransferible");
         Addon storage _addon = addon[_addonID];
 
@@ -312,6 +313,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         public
         tokenOwner(_nftId)
     {
+        // maybe can take this out for gas and the .remove would throw if no addonid on user?
         require(
             addonsConsumed[_nftId].contains(_addonID),
             "Pet doesn't have this addon"
@@ -350,9 +352,13 @@ contract VNFTx is Ownable, ERC1155Holder {
         }
     }
 
-    function action(string memory _signature, uint256 nftId) public notPaused {
+    //@TODO Find a way to pass an array of arguments and parse it on delegated contract
+    function action(string memory _signature, bytes memory data)
+        public
+        notPaused
+    {
         (bool success, ) = delegateContract.delegatecall(
-            abi.encodeWithSignature(_signature, nftId)
+            abi.encodeWithSignature(_signature, data)
         );
 
         require(success, "Action error");
