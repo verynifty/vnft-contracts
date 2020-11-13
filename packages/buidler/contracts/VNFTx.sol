@@ -419,12 +419,20 @@ contract VNFTx is Ownable, ERC1155Holder {
         returns (
             uint256 _vNFT,
             uint256 _rarity,
-            uint256 _hp
+            uint256 _hp,
+            uint256 _addonsCount,
+            uint256[10] memory _addons
         )
     {
         _vNFT = _nftId;
         _rarity = rarity[_nftId];
         _hp = getHp(_nftId);
+        _addonsCount = addonsBalanceOf(_nftId);
+        uint256 index = 0; // NOT FOR @JULES THIS IS HIGHLY EXPERIMENTAL NEED TO TEST
+        while (index < _addonsCount && index < 10) {
+            _addons[index] = (addonsConsumed[_nftId].at(index));
+            index = index + 1;
+        }
     }
 
     function editAddon(
