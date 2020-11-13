@@ -154,8 +154,10 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     event DelegateChanged(address oldAddress, address newAddress);
     event BuyAddon(uint256 nftId, uint256 addon, address player);
-    event CreateAddon(uint256 addonId, string _type, uint256 rarity);
-    event EditAddon(uint256 addonId, string _type, uint256 price);
+    event CreateAddon(uint256 addonId, string _type, uint256 rarity, uint256 quantity);
+    event EditAddon(uint256 addonId, string _type, uint256 price, uint256 _quantity);
+    event AttachAddon(uint256 addonId, uint256 nftId);
+    event RemoveAddon(uint256 addonId, uint256 nftId);
 
     constructor(
         IVNFT _vnft,
@@ -271,7 +273,7 @@ contract VNFTx is Ownable, ERC1155Holder {
             addons.balanceOf(msg.sender, _addonID) >= 1,
             "!own the addon to use it"
         );
-
+        emit AttachAddon(_addonID, _nftId);
         Addon storage _addon = addon[_addonID];
 
         require(
@@ -301,6 +303,8 @@ contract VNFTx is Ownable, ERC1155Holder {
             getHp(_toId) >= _addon.requiredhp,
             "Receiving vNFT with no enough HP"
         );
+        emit RemoveAddon(_addonID, _nftId);
+        emit AttachAddon(_addonID, _toId);
 
         addonsConsumed[_nftId].remove(_addonID);
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
@@ -322,6 +326,8 @@ contract VNFTx is Ownable, ERC1155Holder {
         rarity[_nftId] = rarity[_nftId].sub(_addon.rarity);
 
         addonsConsumed[_nftId].remove(_addonID);
+        emit RemoveAddon(_addonID, _nftId);
+
         addons.safeTransferFrom(address(this), msg.sender, _addonID, 1, "0x0");
     }
 
@@ -404,7 +410,7 @@ contract VNFTx is Ownable, ERC1155Holder {
         );
         addons.mint(address(this), newAddonId, _quantity, "");
 
-        emit CreateAddon(newAddonId, _type, _rarity);
+        emit CreateAddon(newAddonId, _type, _rarity, _quantity);
     }
 
     function getVnftInfo(uint256 _nftId)
@@ -439,9 +445,14 @@ contract VNFTx is Ownable, ERC1155Holder {
         _addon.rarity = _rarity;
         _addon.artistName = _artistName;
         _addon.artistAddr = _artist;
+        if (_quantity > _addon.quantity) {
+            addons.mint(address(this), _id, _quantity - _addon.quantity, "");
+        } else if (_quantity < _addon.quantity) {
+            addons.burn(address(this), _id, _addon.quantity - _quantity);
+        }
         _addon.quantity = _quantity;
         _addon.used = _used;
-        emit EditAddon(_id, _type, price);
+        emit EditAddon(_id, _type, price, _quantity);
     }
 
     function setArtistPct(uint256 _newPct) external onlyOwner {
