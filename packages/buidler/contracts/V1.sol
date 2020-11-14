@@ -51,10 +51,15 @@ contract V1 is Ownable, ERC1155Holder {
 
     //!important, decides which gem score hp is based of
     uint256 public healthGem = 100;
-    uint256 public healthGemDays = 2;
+    uint256 public healthGemDays = 1;
 
     // premium hp is the min requirement for premium features.
     uint256 public premiumHp = 90;
+    uint256 public hpMultiplier = 70;
+    uint256 public rarityMultiplier = 15;
+    uint256 public addonsMultiplier = 15;
+    //expected addons to be used for max hp
+    uint256 public expectedAddons = 10;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
