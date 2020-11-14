@@ -107,11 +107,11 @@ async function main() {
 
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await VNFT.claimMiningRewards(0);
-  await VNFT.buyAccesory(0, 1);
+  // await VNFT.buyAccesory(0, 1);
 
   await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 + 2]); // add 1day
   await VNFT.claimMiningRewards(0);
-  await VNFT.buyAccesory(0, 1);
+  // await VNFT.buyAccesory(0, 1);
   // end 9 days of mining and claiming
   // deploy VNFTx.sol
 
@@ -149,8 +149,11 @@ async function main() {
 
   await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
 
-  const hp = await VNFTx.getHp(0);
+  let rarity = await VNFTx.rarity(0);
+
+  let hp = await VNFTx.getHp(0);
   console.log("your hp after 9 days is: ", hp.toString());
+  console.log("your rarity after 9 days is: ", rarity.toString());
 
   createAddonShield = await VNFTx.createAddon(
     "shield",
@@ -185,7 +188,7 @@ async function main() {
     "hat",
     40,
     50,
-    400,
+    100,
     "RektMeRev33",
     VNFTx.address,
     400
@@ -194,7 +197,7 @@ async function main() {
     "hat",
     10,
     12,
-    10,
+    100,
     "RektMeRev",
     VNFTx.address,
     10
@@ -213,29 +216,31 @@ async function main() {
   // run action function to test delegate contract
 
   // encode params in bytes
-  const data = await web3Abi.encodeParameters(
-    ["uint256", "uint256"],
-    ["0", "100"]
-  );
+  // const data = await web3Abi.encodeParameters(
+  //   ["uint256", "uint256"],
+  //   ["0", "100"]
+  // );
 
-  console.log("data", data);
+  // console.log("data", data);
 
-  const challenge = await VNFTx.action("challenge1(bytes)", data);
-  console.log("action on delegate contract", challenge);
+  // const challenge = await VNFTx.action("challenge1(bytes)", data);
+  // console.log("action on delegate contract", challenge);
 
-  const rarity = await VNFTx.rarity(0);
+  rarity = await VNFTx.rarity(0);
   console.log("rarity: ", rarity.toString());
 
   // @todo that initial hp is always 0
   await VNFTx.buyAddon(0, 1);
   await VNFTx.buyAddon(0, 2);
+  await VNFTx.buyAddon(0, 3);
+  await VNFTx.buyAddon(0, 4);
+  await VNFTx.buyAddon(0, 5);
 
-  // deploy multiVNFT
+  rarity = await VNFTx.rarity(0);
+  console.log("rarity: ", rarity.toString());
 
-  const MultiVnft = await deploy("MultiVnft", [
-    VNFT.address,
-    MuseToken.address,
-  ]);
+  hp = await VNFTx.getHp(0);
+  console.log("hp: ", hp.toString());
 
   // return balance of
   const listSize = await VNFTx.addonsBalanceOf(0);
@@ -248,12 +253,8 @@ async function main() {
 
   console.log("Addons Pet #0 owns", tokens);
 
-  // test nifty Multi mine/feed
-  await VNFT.addCareTaker(0, MultiVnft.address);
-
-  // await MultiVnft.claimMultiple([0]);
-
-  console.log("Claimed Multiple workED!");
+  const info = await VNFTx.getVnftInfo(0);
+  console.log("Addons Pet #0 owns", info);
 }
 
 async function deploy(name, _args) {

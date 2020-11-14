@@ -144,18 +144,33 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     //!important, decides which gem score hp is based of
     uint256 public healthGem = 100;
-    uint256 public healthGemDays = 2;
+    uint256 public healthGemDays = 1;
 
     // premium hp is the min requirement for premium features.
     uint256 public premiumHp = 90;
+    uint256 public hpMultiplier = 70;
+    uint256 public rarityMultiplier = 15;
+    uint256 public addonsMultiplier = 15;
+    //expected addons to be used for max hp
+    uint256 public expectedAddons = 10;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
 
     event DelegateChanged(address oldAddress, address newAddress);
     event BuyAddon(uint256 nftId, uint256 addon, address player);
-    event CreateAddon(uint256 addonId, string _type, uint256 rarity, uint256 quantity);
-    event EditAddon(uint256 addonId, string _type, uint256 price, uint256 _quantity);
+    event CreateAddon(
+        uint256 addonId,
+        string _type,
+        uint256 rarity,
+        uint256 quantity
+    );
+    event EditAddon(
+        uint256 addonId,
+        string _type,
+        uint256 price,
+        uint256 _quantity
+    );
     event AttachAddon(uint256 addonId, uint256 nftId);
     event RemoveAddon(uint256 addonId, uint256 nftId);
 
@@ -208,6 +223,10 @@ contract VNFTx is Ownable, ERC1155Holder {
 
         // multiply by healthy gem divided by 2 (every 2 days)
         uint256 expectedScore = daysLived.mul(healthGem.div(healthGemDays));
+        //@TODO calculate minimum expected rarity
+        uint256 expectedRarity = 300;
+        // get # of addons used
+        uint256 addonsUsed = addonsBalanceOf(_nftId);
 
         // maybe give people 7 days chance to start calculation hp?
         if (
@@ -216,10 +235,18 @@ contract VNFTx is Ownable, ERC1155Holder {
             return 0;
         }
 
-        if (currentScore >= expectedScore) {
+        if (currentScore >= expectedScore && rarity[_nftId] >= expectedRarity) {
             return 100;
         } else {
-            return currentScore.mul(100).div(expectedScore);
+            // here we get the % they get from score, from rarity, from used and then return based on their multiplier
+            uint256 fromScore = currentScore.mul(100).div(expectedScore);
+            uint256 fromRarity = rarity[_nftId].mul(100).div(expectedRarity);
+            uint256 fromUsed = addonsUsed.mul(100).div(expectedAddons);
+            return
+                (fromRarity.mul(rarityMultiplier))
+                    .add(fromScore.mul(hpMultiplier))
+                    .add(fromUsed.mul(addonsMultiplier))
+                    .div(100);
         }
     }
 
@@ -470,10 +497,18 @@ contract VNFTx is Ownable, ERC1155Holder {
     function setHealthStrat(
         uint256 _score,
         uint256 _days,
+        uint256 _hpMultiplier,
+        uint256 _rarityMultiplier,
+        uint256 _expectedAddos,
+        uint256 _addonsMultiplier,
         uint256 _premiumHp
     ) external onlyOwner {
         healthGem = _score;
         healthGemDays = _days;
+        hpMultiplier = _hpMultiplier;
+        rarityMultiplier = _rarityMultiplier;
+        expectedAddons = _expectedAddos;
+        addonsMultiplier = _addonsMultiplier;
         premiumHp = _premiumHp;
     }
 
