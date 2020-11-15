@@ -71,9 +71,15 @@ contract V1 is Ownable, ERC1155Holder {
 
     IVNFTx public vnftx;
 
+    // to check for cashback
+    uint256 public lastWithdraw = 0;
+    uint256 public startWeek;
+    mapping(uint256 => mapping(address => bool)) public withdrew;
+
     constructor(IVNFT _vnft, IMuseToken _muse) public {
         vnft = _vnft;
         muse = _muse;
+        startWeek = block.timestamp;
     }
 
     function setVNFTX(IVNFTx _vnftx) public onlyOwner {
@@ -109,6 +115,12 @@ contract V1 is Ownable, ERC1155Holder {
         rarity[_nftId] = rarity[_nftId] + 888 + _add;
     }
 
+    function getWeek() public view returns (uint256) {
+        // hardcode timestamp of first withdraw
+        uint256 initialWithdrawTime = 123131312;
+        return startWeek.sub(initialWithdrawTime).div(7 days);
+    }
+
     // simple battle for muse
     function battle(uint256 _nftId, uint256 _opponent)
         public
@@ -139,14 +151,38 @@ contract V1 is Ownable, ERC1155Holder {
         muse.mint(msg.sender, 1 ether);
     }
 
-    function cash(uint256 _nftId) external tokenOwner(_nftId) {
-        //require to own the accessory and maintain x level of hp
+    // lol need to check this as might cost $100 in gas to get cashback
+    function cashback(uint256 _nftId) external tokenOwner(_nftId) {
+        //require to own the accessory id and maintain x level of hp
         require(
             addonsConsumed[_nftId].contains(1) &&
                 vnftx.getHp(_nftId) >= premiumHp,
             "You are not qualified"
         );
 
+        uint256 week = getWeek();
+        // let withdraw after x time for not huge muse dump.
+        require(
+            block.timestamp.sub(lastWithdraw) >= 15 minutes,
+            "Can't withdraw yet"
+        );
+
+        require(
+            !withdrew[week][msg.sender],
+            "You got cashback this week already."
+        );
+
+        require(
+            block.timestamp.sub(startWeek) >= 6 days,
+            "You can't withdraw again"
+        );
+        if (
+            block.timestamp.sub(startWeek) >= 6 days &&
+            // don't know about this.
+            block.timestamp.sub(startWeek) <= (uint256(6 days)).add(1 hours)
+        ) {
+            startWeek = block.timestamp;
+        }
         uint256 currentScore = vnft.vnftScore(_nftId);
         uint256 timeBorn = vnft.timeVnftBorn(_nftId);
         uint256 daysLived = (now.sub(timeBorn)).div(1 days);
@@ -159,14 +195,20 @@ contract V1 is Ownable, ERC1155Holder {
         uint256 scoreHealth = currentScore.mul(100).div(expectedScore);
 
         //hp will make sure they have good health from score, rarity and buy addons mix
-        // scoreHealth makes sure they also extra leveled up so it can't be gamed (Basically get 90% from expected score)
-        if (scoreHealth > premiumHp) {
-            //check min burn required to get the cashback and send 40 percentage back on that.
-            uint256 amount = (healthGemPrice.mul(uint256(7).div(healthGemDays)))
-                .mul(40)
-                .div(100);
+        // scoreHealth makes sure they also extra leveled up so it can't be gamed because premiumHp is high
+        require(
+            scoreHealth >= premiumHp,
+            "You need to level up more to qualify for cashbacks"
+        );
 
-            muse.mint(msg.sender, amount);
-        }
+        //check min burn required to get the cashback and send 40 percentage back on that.
+        uint256 amount = (healthGemPrice.mul(uint256(7).div(healthGemDays)))
+            .mul(40)
+            .div(100);
+
+        withdrew[week][msg.sender] = true;
+        lastWithdraw = block.timestamp;
+
+        muse.mint(msg.sender, amount);
     }
 }

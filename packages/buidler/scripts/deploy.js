@@ -248,9 +248,16 @@ async function main() {
   hp = await VNFTx.getHp(0);
   console.log("hp: ", hp.toString());
 
-  const transferLocked = await VNFTx.removeAddon(0, 1);
+  // test unlocked addon
+  let transferLocked = await VNFTx.removeAddon(0, 2);
+
+  console.log("transfered unlocked", transferLocked);
+
+  // test locked addon
+  transferLocked = await VNFTx.removeAddon(0, 1);
 
   console.log("transfered lock", transferLocked);
+
   // return balance of
   const listSize = await VNFTx.addonsBalanceOf(0);
   const tokens = [];
