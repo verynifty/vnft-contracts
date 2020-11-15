@@ -44,13 +44,16 @@ contract V1 is Ownable, ERC1155Holder {
     mapping(uint256 => Addon) public addon;
 
     mapping(uint256 => EnumerableSet.UintSet) private addonsConsumed;
+    EnumerableSet.UintSet lockedAddons;
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
     mapping(uint256 => uint256) public challengesUsed;
 
     //!important, decides which gem score hp is based of
-    uint256 public healthGem = 100;
+    uint256 public healthGemScore = 100;
+    uint256 public healthGemId = 1;
+    uint256 public healthGemPrice = 13 * 10**18;
     uint256 public healthGemDays = 1;
 
     // premium hp is the min requirement for premium features.
@@ -60,6 +63,8 @@ contract V1 is Ownable, ERC1155Holder {
     uint256 public addonsMultiplier = 15;
     //expected addons to be used for max hp
     uint256 public expectedAddons = 10;
+    //Expected rarity, this should be changed according to new addons introduced.
+    uint256 expectedRarity = 300;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -77,6 +82,11 @@ contract V1 is Ownable, ERC1155Holder {
 
     modifier notPaused() {
         require(!paused, "PAUSED");
+        _;
+    }
+
+    modifier notLocked(uint256 _id) {
+        require(!lockedAddons.contains(_id), "This addon is locked");
         _;
     }
 
@@ -134,13 +144,29 @@ contract V1 is Ownable, ERC1155Holder {
         require(
             addonsConsumed[_nftId].contains(1) &&
                 vnftx.getHp(_nftId) >= premiumHp,
-            "You need to buy the accessory"
+            "You are not qualified"
         );
 
-        //TOOD do calculation based on level and muse acquired, should qualify for intervals so not all players get caashback at same price.
+        uint256 currentScore = vnft.vnftScore(_nftId);
+        uint256 timeBorn = vnft.timeVnftBorn(_nftId);
+        uint256 daysLived = (now.sub(timeBorn)).div(1 days);
 
-        // calculate deserving amount and send to user;
-        uint256 amount = 100 * 10**18;
-        muse.mint(msg.sender, amount);
+        // multiply by healthy gem divided by 2 (every 2 days)
+        uint256 expectedScore = daysLived.mul(
+            healthGemScore.div(healthGemDays)
+        );
+
+        uint256 scoreHealth = currentScore.mul(100).div(expectedScore);
+
+        //hp will make sure they have good health from score, rarity and buy addons mix
+        // scoreHealth makes sure they also extra leveled up so it can't be gamed (Basically get 90% from expected score)
+        if (scoreHealth > premiumHp) {
+            //check min burn required to get the cashback and send 40 percentage back on that.
+            uint256 amount = (healthGemPrice.mul(uint256(7).div(healthGemDays)))
+                .mul(40)
+                .div(100);
+
+            muse.mint(msg.sender, amount);
+        }
     }
 }

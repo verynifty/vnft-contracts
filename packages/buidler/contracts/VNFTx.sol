@@ -137,13 +137,16 @@ contract VNFTx is Ownable, ERC1155Holder {
     mapping(uint256 => Addon) public addon;
 
     mapping(uint256 => EnumerableSet.UintSet) private addonsConsumed;
+    EnumerableSet.UintSet lockedAddons;
 
     //nftid to rarity points
     mapping(uint256 => uint256) public rarity;
     mapping(uint256 => uint256) public challengesUsed;
 
     //!important, decides which gem score hp is based of
-    uint256 public healthGem = 100;
+    uint256 public healthGemScore = 100;
+    uint256 public healthGemId = 1;
+    uint256 public healthGemPrice = 13 * 10**18;
     uint256 public healthGemDays = 1;
 
     // premium hp is the min requirement for premium features.
@@ -153,6 +156,8 @@ contract VNFTx is Ownable, ERC1155Holder {
     uint256 public addonsMultiplier = 15;
     //expected addons to be used for max hp
     uint256 public expectedAddons = 10;
+    //Expected rarity, this should be changed according to new addons introduced.
+    uint256 expectedRarity = 300;
 
     using Counters for Counters.Counter;
     Counters.Counter private _addonId;
@@ -189,10 +194,14 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     modifier tokenOwner(uint256 _id) {
         require(
-            vnft.ownerOf(_id) == msg.sender ||
-                vnft.careTaker(_id, vnft.ownerOf(_id)) == msg.sender,
-            "You must own the vNFT or be a care taker"
+            vnft.ownerOf(_id) == msg.sender,
+            "You must own the vNFT to use this feature"
         );
+        _;
+    }
+
+    modifier notLocked(uint256 _id) {
+        require(!lockedAddons.contains(_id), "This addon is locked");
         _;
     }
 
@@ -222,9 +231,10 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 daysLived = (now.sub(timeBorn)).div(1 days);
 
         // multiply by healthy gem divided by 2 (every 2 days)
-        uint256 expectedScore = daysLived.mul(healthGem.div(healthGemDays));
-        //@TODO calculate minimum expected rarity
-        uint256 expectedRarity = 300;
+        uint256 expectedScore = daysLived.mul(
+            healthGemScore.div(healthGemDays)
+        );
+
         // get # of addons used
         uint256 addonsUsed = addonsBalanceOf(_nftId);
 
@@ -235,18 +245,20 @@ contract VNFTx is Ownable, ERC1155Holder {
             return 0;
         }
 
-        if (currentScore >= expectedScore && rarity[_nftId] >= expectedRarity) {
+        // here we get the % they get from score, from rarity, from used and then return based on their multiplier
+        uint256 fromScore = currentScore.mul(100).div(expectedScore);
+        uint256 fromRarity = rarity[_nftId].mul(100).div(expectedRarity);
+        uint256 fromUsed = addonsUsed.mul(100).div(expectedAddons);
+        uint256 hp = (fromRarity.mul(rarityMultiplier))
+            .add(fromScore.mul(hpMultiplier))
+            .add(fromUsed.mul(addonsMultiplier))
+            .div(100);
+
+        //return hp
+        if (hp > 100) {
             return 100;
         } else {
-            // here we get the % they get from score, from rarity, from used and then return based on their multiplier
-            uint256 fromScore = currentScore.mul(100).div(expectedScore);
-            uint256 fromRarity = rarity[_nftId].mul(100).div(expectedRarity);
-            uint256 fromUsed = addonsUsed.mul(100).div(expectedAddons);
-            return
-                (fromRarity.mul(rarityMultiplier))
-                    .add(fromScore.mul(hpMultiplier))
-                    .add(fromUsed.mul(addonsMultiplier))
-                    .div(100);
+            return hp;
         }
     }
 
@@ -270,7 +282,8 @@ contract VNFTx is Ownable, ERC1155Holder {
             "Raise your HP to buy this addon"
         );
         require(
-            _addon.used <= addons.balanceOf(address(this), addonId),
+            // @TODO double check < or <=
+            _addon.used < addons.balanceOf(address(this), addonId),
             "Addon not available"
         );
 
@@ -300,7 +313,7 @@ contract VNFTx is Ownable, ERC1155Holder {
             addons.balanceOf(msg.sender, _addonID) >= 1,
             "!own the addon to use it"
         );
-        emit AttachAddon(_addonID, _nftId);
+
         Addon storage _addon = addon[_addonID];
 
         require(
@@ -315,13 +328,14 @@ contract VNFTx is Ownable, ERC1155Holder {
         rarity[_nftId] = rarity[_nftId].add(_addon.rarity);
 
         addons.safeTransferFrom(msg.sender, address(this), _addonID, 1, "0x0");
+        emit AttachAddon(_addonID, _nftId);
     }
 
     function transferAddon(
         uint256 _nftId,
         uint256 _addonID,
         uint256 _toId
-    ) external tokenOwner(_nftId) {
+    ) external tokenOwner(_nftId) notLocked(_addonID) {
         // maybe don't let transfer cash addon, or maybe yes as accessory in low supply?
         require(_addonID != 1, "this addon is instransferible");
         Addon storage _addon = addon[_addonID];
@@ -343,6 +357,7 @@ contract VNFTx is Ownable, ERC1155Holder {
     function removeAddon(uint256 _nftId, uint256 _addonID)
         public
         tokenOwner(_nftId)
+        notLocked(_addonID)
     {
         // maybe can take this out for gas and the .remove would throw if no addonid on user?
         require(
@@ -420,7 +435,8 @@ contract VNFTx is Ownable, ERC1155Holder {
         uint256 _rarity,
         string calldata _artistName,
         address _artist,
-        uint256 _quantity
+        uint256 _quantity,
+        bool _lock
     ) external onlyOwner {
         _addonId.increment();
         uint256 newAddonId = _addonId.current();
@@ -436,6 +452,10 @@ contract VNFTx is Ownable, ERC1155Holder {
             0
         );
         addons.mint(address(this), newAddonId, _quantity, "");
+
+        if (_lock) {
+            lockAddon(newAddonId);
+        }
 
         emit CreateAddon(newAddonId, _type, _rarity, _quantity);
     }
@@ -471,7 +491,8 @@ contract VNFTx is Ownable, ERC1155Holder {
         string calldata _artistName,
         address _artist,
         uint256 _quantity,
-        uint256 _used
+        uint256 _used,
+        bool _lock
     ) external onlyOwner {
         Addon storage _addon = addon[_id];
         _addon._type = _type;
@@ -481,13 +502,26 @@ contract VNFTx is Ownable, ERC1155Holder {
         _addon.artistName = _artistName;
         _addon.artistAddr = _artist;
         if (_quantity > _addon.quantity) {
-            addons.mint(address(this), _id, _quantity - _addon.quantity, "");
+            addons.mint(address(this), _id, _quantity.sub(_addon.quantity), "");
         } else if (_quantity < _addon.quantity) {
             addons.burn(address(this), _id, _addon.quantity - _quantity);
         }
         _addon.quantity = _quantity;
         _addon.used = _used;
+
+        if (_lock) {
+            lockAddon(_id);
+        }
+
         emit EditAddon(_id, _type, price, _quantity);
+    }
+
+    function lockAddon(uint256 _id) public onlyOwner {
+        lockedAddons.add(_id);
+    }
+
+    function unlockAddon(uint256 _id) public onlyOwner {
+        lockedAddons.remove(_id);
     }
 
     function setArtistPct(uint256 _newPct) external onlyOwner {
@@ -496,19 +530,25 @@ contract VNFTx is Ownable, ERC1155Holder {
 
     function setHealthStrat(
         uint256 _score,
+        uint256 _healthGemPrice,
+        uint256 _healthGemId,
         uint256 _days,
         uint256 _hpMultiplier,
         uint256 _rarityMultiplier,
         uint256 _expectedAddos,
         uint256 _addonsMultiplier,
+        uint256 _expectedRarity,
         uint256 _premiumHp
     ) external onlyOwner {
-        healthGem = _score;
+        healthGemScore = _score;
+        healthGemPrice = _healthGemPrice;
+        healthGemId = _healthGemId;
         healthGemDays = _days;
         hpMultiplier = _hpMultiplier;
         rarityMultiplier = _rarityMultiplier;
         expectedAddons = _expectedAddos;
         addonsMultiplier = _addonsMultiplier;
+        expectedRarity = _expectedRarity;
         premiumHp = _premiumHp;
     }
 

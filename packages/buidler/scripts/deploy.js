@@ -162,7 +162,8 @@ async function main() {
     100,
     "RektMeRev",
     VNFTx.address,
-    100
+    100,
+    true //this addon is locked
   );
 
   createAddonHat = await VNFTx.createAddon(
@@ -172,7 +173,8 @@ async function main() {
     100,
     "RektMeRev",
     VNFTx.address,
-    100
+    100,
+    false
   );
 
   createAddonHat = await VNFTx.createAddon(
@@ -182,7 +184,8 @@ async function main() {
     100,
     "RektMeRev",
     VNFTx.address,
-    100
+    100,
+    false
   );
   createAddonHat = await VNFTx.createAddon(
     "hat",
@@ -191,7 +194,8 @@ async function main() {
     100,
     "RektMeRev33",
     VNFTx.address,
-    400
+    400,
+    false
   );
   createAddonHat = await VNFTx.createAddon(
     "hat",
@@ -200,7 +204,8 @@ async function main() {
     100,
     "RektMeRev",
     VNFTx.address,
-    10
+    10,
+    false
   );
   createAddonHat = await VNFTx.createAddon(
     "hat",
@@ -209,7 +214,8 @@ async function main() {
     100,
     "RektMeRev",
     VNFTx.address,
-    100
+    100,
+    false
   );
   console.log("🚀 Created addon shield and hat \n");
 
@@ -229,7 +235,7 @@ async function main() {
   rarity = await VNFTx.rarity(0);
   console.log("rarity: ", rarity.toString());
 
-  // @todo that initial hp is always 0
+  // @todo that initial hp is alwaours 0
   await VNFTx.buyAddon(0, 1);
   await VNFTx.buyAddon(0, 2);
   await VNFTx.buyAddon(0, 3);
@@ -242,6 +248,9 @@ async function main() {
   hp = await VNFTx.getHp(0);
   console.log("hp: ", hp.toString());
 
+  const transferLocked = await VNFTx.removeAddon(0, 1);
+
+  console.log("transfered lock", transferLocked);
   // return balance of
   const listSize = await VNFTx.addonsBalanceOf(0);
   const tokens = [];
