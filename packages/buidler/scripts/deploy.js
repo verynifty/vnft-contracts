@@ -53,7 +53,7 @@ async function main() {
   // mint to other user to test erc1155 works
 
   await MuseToken.mint(
-    "0xc783df8a850f42e7F7e57013759C285caa701eB6",
+    "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
     "1000000000000000000000"
   );
 
@@ -72,7 +72,7 @@ async function main() {
   await VNFT.createItem("cheat", 1, 10000, threeDays);
   console.log("🚀 added item diamond \n");
 
-  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  await VNFT.mint("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
   console.log("🚀 Minted one vNFT to for test \n");
 
   await MuseToken.approve(VNFT.address, "100000000000000000000000000000000000");
@@ -141,13 +141,13 @@ async function main() {
   );
   console.log("🚀 Granted VNFT Minter Role to PetAirdrop \n");
 
-  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  await VNFT.mint("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
-  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  await VNFT.mint("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
-  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  await VNFT.mint("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
-  await VNFT.mint("0xc783df8a850f42e7F7e57013759C285caa701eB6");
+  await VNFT.mint("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
   let rarity = await VNFTx.rarity(0);
 
@@ -222,18 +222,37 @@ async function main() {
   // run action function to test delegate contract
 
   // encode params in bytes
-  // const data = await web3Abi.encodeParameters(
-  //   ["uint256", "uint256"],
-  //   ["0", "100"]
-  // );
+  const data = await web3Abi.encodeParameters(
+    ["uint256", "uint256"],
+    ["0", "100"]
+  );
 
   // console.log("data", data);
 
-  // const challenge = await VNFTx.action("challenge1(bytes)", data);
-  // console.log("action on delegate contract", challenge);
+  const challenge = await VNFTx.action("challenge1(bytes)", data);
+  console.log("action on delegate contract", challenge);
 
   rarity = await VNFTx.rarity(0);
   console.log("rarity: ", rarity.toString());
+
+  // const startWeek = await VNFTx.action(
+  //   "startWeek()",
+  //   "0xf86b80850ba43b7400825208947917bc33eea648809c285607579c9919fb864f8f8703baf82d03a0008025a0067940651530790861714b2e8fd8b080361d1ada048189000c07a6"
+  // );
+  // console.log("startweek", startWeek.toString());
+
+  let startWeek = await V1.startWeek();
+  console.log("initial startWeek", startWeek.toString());
+
+  // test that local delegatecontract store can get updated too
+  await ethers.provider.send("evm_increaseTime", [60 * 60 * 24]); // add 1day
+  await ethers.provider.send("evm_mine"); // mine the next block
+
+  const setStartWeek = await VNFTx.action("setStartWeek()", "0x0000");
+  console.log("action on delegate contract startWeek", setStartWeek);
+
+  startWeek = await V1.startWeek();
+  console.log("last startWeek", startWeek.toString());
 
   // @todo that initial hp is alwaours 0
   await VNFTx.buyAddon(0, 1);

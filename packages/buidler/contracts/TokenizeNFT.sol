@@ -12,9 +12,8 @@ import "./interfaces/IVNFT.sol";
 pragma solidity ^0.6.0;
 
 contract TokenizeNFT is Ownable, ERC20PresetMinterPauser {
-    
     using SafeMath for uint256;
-  
+
     IVNFT public vnft;
     IMuseToken public muse;
     uint256 public premint;
@@ -25,7 +24,16 @@ contract TokenizeNFT is Ownable, ERC20PresetMinterPauser {
 
     uint256 public currentNft; // maybe put it as an array to tokenize buckets?
 
-    constructor(IVNFT _vnft, IMuseToken _muse, string memory _tokenName, string memory _tokenSymbol, address _creator, uint256 _premint, uint256 _vestingPeriod, uint256 _defaultGem) public ERC20PresetMinterPauser(_tokenName, _tokenSymbol) {
+    constructor(
+        IVNFT _vnft,
+        IMuseToken _muse,
+        string memory _tokenName,
+        string memory _tokenSymbol,
+        address _creator,
+        uint256 _premint,
+        uint256 _vestingPeriod,
+        uint256 _defaultGem
+    ) public ERC20PresetMinterPauser(_tokenName, _tokenSymbol) {
         vnft = _vnft;
         muse = _muse;
         creator = _creator;
@@ -40,7 +48,11 @@ contract TokenizeNFT is Ownable, ERC20PresetMinterPauser {
 
     function join(address _to, uint256 _times) public {
         require(_times < MAXTOKENS, "Can't whale in");
-        muse.transferFrom(msg.sender, address(this), vnft.itemPrice(gem) * _times);
+        muse.transferFrom(
+            msg.sender,
+            address(this),
+            vnft.itemPrice(defaultGem) * _times
+        );
         uint256 index = 0;
         while (index < _times) {
             vnft.buyAccesory(currentNft, defaultGem);
@@ -50,12 +62,12 @@ contract TokenizeNFT is Ownable, ERC20PresetMinterPauser {
         mint(_to, getJoinReturn(_times));
     }
 
-    function getMuseValue(uint256 _quantity) public view returns(uint256) {
+    function getMuseValue(uint256 _quantity) public view returns (uint256) {
         uint256 reward = totalSupply().div(_quantity); // Need to put in percent and send make it to muse balance of this
         return reward;
     }
 
-    function getJoinReturn(uint256 _times) public view returns(uint256) {
+    function getJoinReturn(uint256 _times) public pure returns (uint256) {
         return _times; //need to calculate how much reward depending on time fed?
     }
 

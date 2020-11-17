@@ -115,6 +115,11 @@ contract V1 is Ownable, ERC1155Holder {
         rarity[_nftId] = rarity[_nftId] + 888 + _add;
     }
 
+    // this to test that external contract can change local delegated store too.
+    function setStartWeek() public {
+        startWeek = block.timestamp;
+    }
+
     function getWeek() public view returns (uint256) {
         // hardcode timestamp of first withdraw
         uint256 initialWithdrawTime = 123131312;
