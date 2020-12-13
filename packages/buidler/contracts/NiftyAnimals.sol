@@ -31,7 +31,7 @@ contract NiftyAnimals is Ownable, TokenRecover {
         endTime = now.add(addTime);
     }
 
-    function start(uint256 _gem, uint256 _days) external onlyOwner {
+    function start(uint256 _gem) external onlyOwner {
         gem = _gem;
         muse.approve(address(vnft), MAX_INT);
         vnft.mint(address(this));
